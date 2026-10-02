@@ -203,10 +203,15 @@ three parts:
   `- 14:32 call the accountant`. `Ctrl+Enter` files it. A capture is **appended**,
   so it can never overwrite what is already in the note, and a multi-line capture
   stays a single bullet with its extra lines indented.
-- **The list** on the left, newest first. Typing filters by name as you type, and
-  once the query is three characters long it also searches the contents of every
-  note; notes that only matched on their contents rank below name matches.
-  `Ctrl+F` or `/` jumps to the search box.
+- **The list** on the left, newest first, showing each note's first Markdown
+  heading when it has one and its file name otherwise. Typing filters by name,
+  and once the query is three characters long it also searches the contents of
+  every note; notes that only matched on their contents rank below name matches.
+  `Ctrl+F` or `/` jumps to the search box, `↑` and `↓` walk the results from
+  anywhere in the panel, and `Enter` in the search box opens the first one. Only
+  the folder itself is listed, not its subfolders, because a note is saved back
+  under a plain file name. If the folder holds more than 1000 notes, the list
+  says how many of the total it is showing.
 - **The editor** on the right for the note that is selected. Clicking a note in
   the list opens it and puts the cursor in the editor. `Ctrl+S` or the save
   button writes it. The toolbar buttons are icons; hovering one says what it
@@ -228,11 +233,19 @@ typed.
 a plain file name derived from it, for example `ideas-de-producto.md`.
 
 Notes are Markdown files in one folder, `~/.Vista/Notes` by default. The folder is
-created the first time you open the app, never before, and the path is remembered
-in `notes.json` in Vista's state directory — point it at an Obsidian vault or any
-other folder of Markdown files and the app works there. Only a plain file name
-inside that folder is ever written: a title that looks like a path, such as
-`../../etc/passwd`, becomes `etc-passwd.md`.
+created the first time you open the app, never before. The path is the **Folder**
+field at the bottom of the panel: type another one, press Enter, and Notes works
+there instead, remembered in `notes.json` in Vista's state directory. Point it at
+an Obsidian vault and the notes already in it are listed, opened and saved as
+they are, accents, spaces and parentheses included.
+
+Only a plain file name inside that folder is ever written. A title of our own
+making is slugified, so `../../etc/passwd` becomes `etc-passwd.md`, while an
+existing file keeps whatever name it has as long as that name cannot leave the
+folder, hide the file or carry a control character. Creating a note never lands
+on a name that is taken: the second `Ideas de producto` becomes
+`ideas-de-producto-2.md`, and a write that does not reach the disk is reported
+rather than reported as saved.
 
 The app does not delete notes.
 
