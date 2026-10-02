@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "ranu.panorama",
   "name": "Vista",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "author": "elranu",
   "license": "MIT",
   "description": "Multi-monitor workspace overview for Omarchy: live thumbnails, drag windows across workspaces and monitors, MRU ordering, search, and automatic Win-key integration.",
