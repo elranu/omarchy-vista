@@ -53,3 +53,25 @@ test('an earlier entry keeps a key a later one would claim', () => {
 test('keys are lower-cased and .desktop suffixes dropped', () => {
     assert.equal(entryKeys({ id: 'Foo.desktop', startupClass: 'FooBar', execString: 'foo' }).join(','), 'foobar,foo,foo');
 });
+
+test('wanted icon names come from the entries, plus the generic fallback', () => {
+    const { wantedIconNames } = context;
+    const names = Array.from(wantedIconNames(entries)).sort().join(',');
+    assert.equal(names, 'application-x-executable,brave-desktop,com.mitchellh.ghostty,github-desktop,vscode');
+    // Absolute paths resolve on their own, and an entry without an icon adds nothing.
+    const other = Array.from(wantedIconNames([{ icon: '/opt/app/icon.png' }, { icon: '' }, {}])).join(',');
+    assert.equal(other, 'application-x-executable');
+    assert.equal(Array.from(wantedIconNames(null)).join(','), 'application-x-executable');
+});
+
+test('the scan command filters to the wanted names and drops unsafe ones', () => {
+    const { iconScanCommand, safeIconName } = context;
+    const command = iconScanCommand(['brave-desktop', 'com.mitchellh.ghostty', 'bad"name', 'back\\slash', 'semi;colon']);
+    assert.match(command, /grep -E "\/\(brave-desktop\|com\.mitchellh\.ghostty\)\\\.\(svg\|png\)\$"/);
+    for (const unsafe of ['bad"name', 'back\\slash', 'semi;colon', '$(id)', 'a b'])
+        assert.equal(safeIconName(unsafe), false, unsafe);
+    for (const safe of ['brave-desktop', 'com.mitchellh.ghostty', 'x+y', 'A_1'])
+        assert.equal(safeIconName(safe), true, safe);
+    assert.equal(iconScanCommand([]), '');
+    assert.equal(iconScanCommand(['bad name']), '');
+});

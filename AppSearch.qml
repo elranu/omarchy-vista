@@ -66,19 +66,6 @@ Singleton {
         return path ? (path.startsWith("/") ? `file://${path}` : path) : "";
     }
 
-    function iconIndexScanCommand() {
-        return [
-            'dirs="$HOME/.icons $HOME/.local/share/icons";',
-            'IFS=":"; for d in ${XDG_DATA_DIRS:-/usr/local/share:/usr/share}; do dirs="$dirs $d/icons"; done; unset IFS;',
-            'for ext in svg png; do',
-            '  for base in $dirs; do',
-            '    [[ -d $base ]] && find "$base" \\( -path "*/apps/*" -o -path "*/devices/*" \\) -name "*.$ext" 2>/dev/null;',
-            '  done;',
-            '  find /usr/share/pixmaps -maxdepth 1 -name "*.$ext" 2>/dev/null;',
-            'done'
-        ].join(" ");
-    }
-
     function indexIconLine(path) {
         const value = String(path || "").trim();
         const slash = value.lastIndexOf("/");
@@ -91,7 +78,7 @@ Singleton {
 
     Process {
         id: iconIndexScan
-        command: ["bash", "-c", root.iconIndexScanCommand()]
+        command: ["bash", "-c", AppIcons.iconScanCommand(AppIcons.wantedIconNames(DesktopEntries.applications.values || []))]
         stdout: SplitParser {
             onRead: function(line) { root.indexIconLine(line); }
         }
@@ -100,7 +87,6 @@ Singleton {
     }
 
     Component.onCompleted: {
-        iconIndexScan.running = true;
         root.rebuildClassIconIndex();
     }
 
@@ -112,11 +98,34 @@ Singleton {
 
     function rebuildClassIconIndex() {
         root.classIconIndex = AppIcons.buildIndex(DesktopEntries.applications.values || []);
+        // New entries can declare icons the file index has never seen.
+        if (!iconIndexScan.running)
+            iconIndexScan.running = true;
+    }
+
+    // Quickshell re-emits the entry list on every rescan, and those come in
+    // bursts (an application launching is enough). Rebuilding the index inside
+    // the signal handler put that work, and its garbage, on the main thread
+    // each time; coalescing keeps one rebuild per burst.
+    //
+    // The running timer is deliberately not restarted, matching the same choice
+    // in HyprlandData: restarting would be a true debounce, and a steady
+    // trickle of rescans could then postpone the rebuild indefinitely, leaving
+    // icons stale. This way a rebuild always lands within the interval, and a
+    // rescan arriving after it simply schedules the next one.
+    Timer {
+        id: classIconRebuild
+        interval: 500
+        repeat: false
+        onTriggered: root.rebuildClassIconIndex()
     }
 
     Connections {
         target: DesktopEntries.applications
-        function onValuesChanged() { root.rebuildClassIconIndex(); }
+        function onValuesChanged() {
+            if (!classIconRebuild.running)
+                classIconRebuild.start();
+        }
     }
 
     function guessIcon(name) {
