@@ -7,7 +7,7 @@ const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(require.resolve('../Displays.js'), 'utf8'), context);
 const {
     logicalSize, describeMonitor, fromMonitors, place, moveToSide, normalize,
-    monitorKeyword, layoutSignature, savedLayout, restoreLayout, samePositions
+    monitorRule, mergeMetadata, layoutSignature, savedLayout, restoreLayout, samePositions
 } = context;
 
 const LAPTOP = {
@@ -142,10 +142,41 @@ test('a single monitor has no side to move to', () => {
     assert.equal(at(moveToSide(tiles, 'eDP-1', 'left')), 'eDP-1@0x0');
 });
 
-test('the keyword echoes the mode and scale back and only changes the position', () => {
+test('the rule echoes mode, scale and transform back and only changes the position', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
-    assert.equal(monitorKeyword(tiles[1]), 'DP-3,2560x1600@60.00,1800x0,1.6');
-    assert.equal(monitorKeyword(tiles[0]), 'eDP-1,2880x1800@90.00,0x0,1.6');
+    // Lua, for `hyprctl eval`: Omarchy 4 drives Hyprland with the Lua parser and
+    // `hyprctl keyword` refuses to run against it.
+    assert.equal(monitorRule(tiles[1]),
+        'hl.monitor({ output = "DP-3", mode = "2560x1600@59.998", position = "1800x0", scale = 1.6, transform = 0 })');
+    assert.equal(monitorRule(tiles[0]),
+        'hl.monitor({ output = "eDP-1", mode = "2880x1800@90.001", position = "0x0", scale = 1.6, transform = 0 })');
+});
+
+test('a rotated screen keeps its transform when a layout is applied', () => {
+    const portrait = {
+        name: 'DP-5', description: 'Dell portrait', width: 2560, height: 1440,
+        scale: 1, x: 0, y: 0, refreshRate: 60, transform: 1
+    };
+    const tiles = fromMonitors([portrait]);
+    // Logical size is turned on its side, and the rule says so: omitting the
+    // transform would put the screen back to its normal orientation.
+    assert.equal(sizes(tiles), 'DP-5:1440x2560');
+    assert.match(monitorRule(tiles[0]), /transform = 1 \}\)$/);
+});
+
+test('an edit keeps its positions but takes the fresh mode and scale', () => {
+    const tiles = fromMonitors([LAPTOP, EXTERNAL]);
+    const edited = moveToSide(tiles, 'DP-3', 'left');
+    // The external changes mode and scale while the edit is open.
+    const live = fromMonitors([LAPTOP, Object.assign({}, EXTERNAL, {
+        width: 1920, height: 1080, scale: 1, refreshRate: 120
+    })]);
+    const merged = mergeMetadata(edited, live);
+    assert.equal(at(merged), at(edited));
+    const external = merged.find(tile => tile.name === 'DP-3');
+    assert.equal(`${external.width}x${external.height}`, '1920x1080');
+    assert.equal(external.scale, 1);
+    assert.match(monitorRule(external), /mode = "1920x1080@120.000"/);
 });
 
 test('the signature identifies the set of screens, whatever their order', () => {

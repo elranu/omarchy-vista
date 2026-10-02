@@ -231,9 +231,13 @@ gaps for the pointer to get stuck in.
 | `r` | Reload the Hyprland config, undoing an applied layout |
 | `Escape` | Close |
 
-**Apply** only sets positions. The mode and the scale of each monitor are echoed
-back exactly as reported, so resolution and refresh rate stay with Omarchy's own
-Display panel and your `monitors.lua`. It lasts until the next Hyprland reload.
+**Apply** only sets positions. The mode, the scale and the transform of each
+monitor are echoed back exactly as reported, so resolution, refresh rate and
+rotation stay with Omarchy's own Display panel and your `monitors.lua`. It is one
+`hyprctl eval` call with an `hl.monitor` rule per screen — Omarchy 4 drives
+Hyprland through the Lua parser, and `hyprctl keyword` refuses to run against it
+— so Hyprland never sees an intermediate layout with two screens on top of each
+other. It lasts until the next Hyprland reload.
 Hyprland restarts the layer surfaces on every screen that moves, so the Overview
 closes when you apply.
 

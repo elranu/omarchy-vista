@@ -69,12 +69,14 @@ MiniApp {
     }
 
     // One hyprctl call for the whole layout: applying monitor by monitor would
-    // leave Hyprland in an overlapping intermediate state between calls.
+    // leave Hyprland in an overlapping intermediate state between calls. It goes
+    // through `eval`, because Omarchy 4 drives Hyprland with the Lua parser and
+    // `hyprctl keyword` refuses to run against it.
     function apply() {
         if (!root.dirty)
             return;
-        const commands = root.tiles.map(tile => `keyword monitor ${Displays.monitorKeyword(tile)}`);
-        Quickshell.execDetached(["hyprctl", "--batch", commands.join("; ")]);
+        const rules = root.tiles.map(tile => Displays.monitorRule(tile));
+        Quickshell.execDetached(["hyprctl", "eval", rules.join("; ")]);
         root.applied();
     }
 
@@ -160,8 +162,15 @@ MiniApp {
         target: HyprlandData
         function onMonitorsChanged() {
             const live = Displays.fromMonitors(HyprlandData.monitors);
-            if (!root.dirty || Displays.layoutSignature(live) !== root.signature)
+            if (!root.dirty || Displays.layoutSignature(live) !== root.signature) {
                 root.reload();
+                return;
+            }
+            // Same screens with an edit in progress: keep where the tiles were
+            // dragged to, but take the fresh mode, scale and transform, so Apply
+            // cannot send stale values back with the new position.
+            root.liveTiles = live;
+            root.tiles = Displays.mergeMetadata(root.tiles, live);
         }
     }
 

@@ -23,6 +23,14 @@ Singleton {
     // Signature -> { positions: [{ key, name, x, y }], savedAt }
     property var layouts: ({})
     property bool ready: false
+    // A Save asked for before the file finished loading would be dropped and
+    // then overwritten by the loaded contents, so it waits here instead.
+    property bool savePending: false
+    // The screens the last restore was considered for. Monitors are re-fetched
+    // on every Hyprland event this plugin accepts, so without this a restore
+    // would run again on any focus or window change and undo an arrangement the
+    // user applied without saving.
+    property string lastSignature: ""
     // Mirrors the bar widget's `restoreDisplayLayouts` setting.
     readonly property bool restoreEnabled: GlobalStates.restoreDisplayLayouts
 
@@ -93,11 +101,16 @@ Singleton {
         // monitorsChanged that would have triggered a restore has already been
         // and gone. Ask for one now that the saved layouts are in hand.
         root.restoreDebounce.restart();
+        if (root.savePending)
+            root.persist();
     }
 
     function persist() {
-        if (!root.ready)
+        if (!root.ready) {
+            root.savePending = true;
             return;
+        }
+        root.savePending = false;
         stateFile.setText(root.serialized());
     }
 
@@ -118,8 +131,8 @@ Singleton {
         const target = Displays.restoreLayout(live, saved);
         if (!target || Displays.samePositions(live, target))
             return false;
-        const commands = target.map(tile => `keyword monitor ${Displays.monitorKeyword(tile)}`);
-        Quickshell.execDetached(["hyprctl", "--batch", commands.join("; ")]);
+        const rules = target.map(tile => Displays.monitorRule(tile));
+        Quickshell.execDetached(["hyprctl", "eval", rules.join("; ")]);
         root.restored(signature);
         return true;
     }
@@ -140,6 +153,8 @@ Singleton {
             if (error !== FileViewError.FileNotFound)
                 console.warn("[DisplayLayouts] Failed to load saved layouts:", error);
             root.ready = true;
+            if (root.savePending)
+                root.persist();
         }
     }
 
@@ -154,6 +169,10 @@ Singleton {
     property Connections monitorWatch: Connections {
         target: HyprlandData
         function onMonitorsChanged() {
+            const signature = Displays.layoutSignature(Displays.fromMonitors(HyprlandData.monitors));
+            if (signature === root.lastSignature)
+                return;
+            root.lastSignature = signature;
             if (root.ready)
                 root.restoreDebounce.restart();
         }

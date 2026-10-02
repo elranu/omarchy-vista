@@ -9,9 +9,12 @@
   others, and the layout is normalised to `0x0`, so there are no overlapping
   screens and no gaps the pointer gets stuck in. Arrow keys or `h j k l` move
   the selected screen, and pressing the same key again slides it along that side.
-- Applying only sets positions: each monitor's mode and scale are echoed back
-  exactly as `hyprctl monitors` reports them, in a single `hyprctl --batch` call
-  so Hyprland never sees an intermediate overlapping layout.
+- Applying only sets positions: each monitor's mode, scale and transform are
+  echoed back exactly as `hyprctl monitors` reports them, so a rotated screen
+  keeps its orientation. It is a single `hyprctl eval` call with one
+  `hl.monitor` rule per screen, so Hyprland never sees an intermediate
+  overlapping layout. `hyprctl keyword` is not usable here: Omarchy 4 configures
+  Hyprland through the Lua parser and keyword refuses to run against it.
 - A layout can be saved for the exact set of connected screens, in Vista's own
   state file (`display-layouts.json`), and is put back when those same screens
   appear again. Nothing is written to the Hyprland configuration, and a set of

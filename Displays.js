@@ -414,14 +414,43 @@ function moveToSide(tiles, key, side) {
     return place(out, key, target.x, target.y, 0);
 }
 
-// The `monitor` keyword Hyprland takes at runtime: connector, mode, position,
-// scale. The mode is echoed back exactly as reported so applying a move never
-// changes resolution or refresh rate; only the position differs.
-function monitorKeyword(tile) {
+// The Lua monitor rule Hyprland applies at runtime, for `hyprctl eval`.
+//
+// Not `hyprctl keyword`: Omarchy 4 configures Hyprland through the Lua parser,
+// and keyword refuses to run against it ("keyword can't work with non-legacy
+// parsers. Use eval.").
+//
+// Mode, scale and transform are echoed back exactly as `hyprctl monitors`
+// reports them, so applying a layout only ever changes the position. The
+// transform matters: leaving it out resets a rotated screen to its normal
+// orientation, which this feature promises not to touch.
+function monitorRule(tile) {
     const refresh = Number(tile?.refreshRate) || 0;
-    const mode = `${Math.round(Number(tile?.width) || 0)}x${Math.round(Number(tile?.height) || 0)}@${refresh.toFixed(2)}`;
+    const mode = `${Math.round(Number(tile?.width) || 0)}x${Math.round(Number(tile?.height) || 0)}@${refresh.toFixed(3)}`;
+    const position = `${Math.round(Number(tile?.x) || 0)}x${Math.round(Number(tile?.y) || 0)}`;
     const scale = Number(tile?.scale) || 1;
-    return `${tile?.name ?? ""},${mode},${Math.round(Number(tile?.x) || 0)}x${Math.round(Number(tile?.y) || 0)},${scale}`;
+    const transform = Math.abs(Number(tile?.transform) || 0);
+    return `hl.monitor({ output = "${tile?.name ?? ""}", mode = "${mode}", `
+        + `position = "${position}", scale = ${scale}, transform = ${transform} })`;
+}
+
+// Takes the fresh mode, scale, transform and focus for screens that are still
+// connected, while keeping the positions as they were edited. Applying an edit
+// that started before a mode or scale change would otherwise send the old
+// values back to Hyprland along with the new position.
+function mergeMetadata(edited, live) {
+    const liveList = Array.isArray(live) ? live : [];
+    const out = [];
+    for (var i = 0; i < liveList.length; ++i) {
+        const fresh = Object.assign({}, liveList[i]);
+        const previous = (Array.isArray(edited) ? edited : []).find(tile => tile.key === fresh.key);
+        if (previous) {
+            fresh.x = previous.x;
+            fresh.y = previous.y;
+        }
+        out.push(fresh);
+    }
+    return normalize(out);
 }
 
 function samePositions(a, b) {
