@@ -17,6 +17,9 @@
   appear again. Nothing is written to the Hyprland configuration, and a set of
   screens with no saved layout is left to `monitors.lua`. The new gear-panel
   toggle **Restore saved display layouts** turns the restoring off.
+- Mini apps open as a window rather than a small box: the panel takes a share of
+  the Overview, with each app's own size as the floor, so the Displays canvas and
+  the calculator both get the room they need on a large screen.
 
 ## 0.2.5
 

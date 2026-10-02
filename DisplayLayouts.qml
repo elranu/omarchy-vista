@@ -89,6 +89,10 @@ Singleton {
         } catch (e) {
             console.warn("[DisplayLayouts] Failed to parse saved layouts:", e);
         }
+        // Monitors are usually known before this file finishes loading, so the
+        // monitorsChanged that would have triggered a restore has already been
+        // and gone. Ask for one now that the saved layouts are in hand.
+        root.restoreDebounce.restart();
     }
 
     function persist() {

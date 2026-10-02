@@ -30,6 +30,8 @@ MiniApp {
     icon: "calculator"
     contentWidth: 640
     contentHeight: 600
+    widthShare: 0.42
+    heightShare: 0.66
     hints: [
         { key: "⏎", label: "Copy" },
         { key: "⌫", label: "Delete" },

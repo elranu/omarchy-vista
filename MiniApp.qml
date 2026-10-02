@@ -18,8 +18,23 @@ Item {
     property string title: ""
     property string subtitle: ""
     property string icon: "apps"
+    // A mini app is a window, not a tooltip: it takes a share of the Overview
+    // and only falls back to its own preferred size on a screen too small for
+    // that share. contentWidth/contentHeight are the floor, the shares are what
+    // the panel grows to, and the margins keep the workspace grid visible
+    // around it.
     property real contentWidth: 620
     property real contentHeight: 460
+    property real widthShare: 0.62
+    property real heightShare: 0.74
+    readonly property real sideMargin: 48
+    readonly property real verticalMargin: 72
+    readonly property real panelWidth:
+        Math.min(Math.max(root.contentWidth, root.width * root.widthShare),
+                 root.width - 2 * root.sideMargin)
+    readonly property real panelHeight:
+        Math.min(Math.max(root.contentHeight, root.height * root.heightShare),
+                 root.height - 2 * root.verticalMargin)
     // Pairs of { key, label } drawn as keycaps along the bottom.
     property var hints: []
 
@@ -45,8 +60,8 @@ Item {
     Rectangle {
         id: panel
         anchors.centerIn: parent
-        width: Math.min(root.contentWidth, root.width - 80)
-        height: Math.min(root.contentHeight, root.height - 120)
+        width: root.panelWidth
+        height: root.panelHeight
         radius: 10
         color: TuiStyle.bg
         border.width: 1

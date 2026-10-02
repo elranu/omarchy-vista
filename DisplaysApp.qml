@@ -26,8 +26,10 @@ MiniApp {
     title: "Displays"
     subtitle: "Drag a screen to where it stands on your desk"
     icon: "monitor"
-    contentWidth: 760
-    contentHeight: 580
+    contentWidth: 900
+    contentHeight: 640
+    widthShare: 0.72
+    heightShare: 0.78
     hints: [
         { key: "←→↑↓", label: "Move" },
         { key: "1-9", label: "Select" },
@@ -150,12 +152,15 @@ MiniApp {
 
     Component.onCompleted: root.reload()
 
-    // A monitor plugged or unplugged while the panel is open invalidates the
-    // edit, so the canvas goes back to what Hyprland reports.
+    // Hyprland reports monitors again for focus and metadata changes too, so an
+    // edit in progress is only thrown away when the set of screens itself
+    // changed: tiles naming a connector that is gone would otherwise be applied
+    // or saved for the wrong monitors.
     Connections {
         target: HyprlandData
         function onMonitorsChanged() {
-            if (!root.dirty)
+            const live = Displays.fromMonitors(HyprlandData.monitors);
+            if (!root.dirty || Displays.layoutSignature(live) !== root.signature)
                 root.reload();
         }
     }

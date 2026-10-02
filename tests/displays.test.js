@@ -6,7 +6,7 @@ const vm = require('node:vm');
 const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(require.resolve('../Displays.js'), 'utf8'), context);
 const {
-    logicalSize, monitorKey, fromMonitors, place, moveToSide, normalize,
+    logicalSize, describeMonitor, fromMonitors, place, moveToSide, normalize,
     monitorKeyword, layoutSignature, savedLayout, restoreLayout, samePositions
 } = context;
 
@@ -49,10 +49,39 @@ test('a rotated monitor swaps its logical width and height', () => {
     assert.equal(dim({ width: 2560, height: 1440, scale: 1, transform: 2 }), '2560x1440');
 });
 
-test('the key prefers the description, because connector names move between plugs', () => {
-    assert.equal(monitorKey(EXTERNAL), 'desc:HAK TYPEC 0x01010101');
-    assert.equal(monitorKey({ name: 'DP-5', description: '' }), 'DP-5');
-    assert.equal(monitorKey({ name: 'DP-5' }), 'DP-5');
+test('the saved identity prefers the description, because connector names move between plugs', () => {
+    assert.equal(describeMonitor(EXTERNAL), 'desc:HAK TYPEC 0x01010101');
+    assert.equal(describeMonitor({ name: 'DP-5', description: '' }), 'DP-5');
+    assert.equal(describeMonitor({ name: 'DP-5' }), 'DP-5');
+    const tiles = fromMonitors([LAPTOP, EXTERNAL]);
+    assert.equal(tiles.find(tile => tile.name === 'DP-3').match, 'desc:HAK TYPEC 0x01010101');
+    // The runtime key is the connector, which is what selecting one tile needs.
+    assert.equal(tiles.map(tile => tile.key).sort().join(','), 'DP-3,eDP-1');
+});
+
+test('twin monitors reporting the same description still get one identity each', () => {
+    const twin = (connector, x) => ({
+        name: connector, description: 'Dell U2720Q', width: 2560, height: 1440,
+        scale: 1, x: x, y: 0, refreshRate: 60, transform: 0
+    });
+    const tiles = fromMonitors([twin('DP-3', 0), twin('DP-5', 2560)]);
+    assert.equal(tiles.map(tile => tile.key).sort().join(','), 'DP-3,DP-5');
+    assert.equal(tiles.map(tile => tile.match).sort().join(','),
+                 'desc:Dell U2720Q#1,desc:Dell U2720Q#2');
+    // Moving one twin leaves the other where it was.
+    const moved = place(tiles, 'DP-5', -2400, 0);
+    assert.equal(at(moved), 'DP-3@2560x0 DP-5@0x0');
+    // And each twin gets its own saved position back, not the first one twice.
+    const restored = restoreLayout(tiles, savedLayout(moved));
+    assert.equal(at(restored), 'DP-3@2560x0 DP-5@0x0');
+});
+
+test('a saved layout survives the external moving to another connector', () => {
+    const tiles = fromMonitors([LAPTOP, EXTERNAL]);
+    const saved = savedLayout(moveToSide(tiles, 'DP-3', 'left'));
+    const replugged = fromMonitors([LAPTOP, Object.assign({}, EXTERNAL, { name: 'DP-5' })]);
+    const restored = restoreLayout(replugged, saved);
+    assert.equal(at(restored), 'DP-5@0x0 eDP-1@1600x0');
 });
 
 test('disabled monitors are left out and the rest come back left to right', () => {
@@ -65,13 +94,13 @@ test('disabled monitors are left out and the rest come back left to right', () =
 
 test('a drag near a neighbour edge clicks onto it', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
-    const moved = place(tiles, 'desc:HAK TYPEC 0x01010101', 1760, 30);
+    const moved = place(tiles, 'DP-3', 1760, 30);
     assert.equal(at(moved), 'DP-3@1800x0 eDP-1@0x0');
 });
 
 test('a monitor dropped on top of another slides to its nearest free side', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
-    const moved = place(tiles, 'desc:HAK TYPEC 0x01010101', 200, 100);
+    const moved = place(tiles, 'DP-3', 200, 100);
     noOverlap(moved);
     const external = moved.find(tile => tile.name === 'DP-3');
     assert.equal(external.y, 1125);
@@ -79,7 +108,7 @@ test('a monitor dropped on top of another slides to its nearest free side', () =
 
 test('a monitor dropped in empty space is pulled back against the others', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
-    const moved = place(tiles, 'desc:HAK TYPEC 0x01010101', 6000, 4000);
+    const moved = place(tiles, 'DP-3', 6000, 4000);
     noOverlap(moved);
     const external = moved.find(tile => tile.name === 'DP-3');
     const laptop = moved.find(tile => tile.name === 'eDP-1');
@@ -88,7 +117,7 @@ test('a monitor dropped in empty space is pulled back against the others', () =>
 
 test('the layout always starts at 0x0', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
-    const moved = place(tiles, 'desc:HAK TYPEC 0x01010101', -1700, -900);
+    const moved = place(tiles, 'DP-3', -1700, -900);
     assert.equal(at(moved), 'DP-3@0x0 eDP-1@1600x0');
     const single = normalize([{ key: 'a', name: 'DP-1', x: 500, y: 400, w: 100, h: 100 }]);
     assert.equal(at(single), 'DP-1@0x0');
@@ -96,12 +125,12 @@ test('the layout always starts at 0x0', () => {
 
 test('an arrow parks the monitor on that side and pressing it again slides along', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
-    const once = moveToSide(tiles, 'desc:HAK TYPEC 0x01010101', 'up');
+    const once = moveToSide(tiles, 'DP-3', 'up');
     noOverlap(once);
     const first = once.find(tile => tile.name === 'DP-3');
     const laptopFirst = once.find(tile => tile.name === 'eDP-1');
     assert.equal(first.y + first.h, laptopFirst.y);
-    const twice = moveToSide(once, 'desc:HAK TYPEC 0x01010101', 'up');
+    const twice = moveToSide(once, 'DP-3', 'up');
     noOverlap(twice);
     const second = twice.find(tile => tile.name === 'DP-3');
     assert.notEqual(`${second.x}x${second.y}`, `${first.x}x${first.y}`);
@@ -110,7 +139,7 @@ test('an arrow parks the monitor on that side and pressing it again slides along
 
 test('a single monitor has no side to move to', () => {
     const tiles = fromMonitors([LAPTOP]);
-    assert.equal(at(moveToSide(tiles, monitorKey(LAPTOP), 'left')), 'eDP-1@0x0');
+    assert.equal(at(moveToSide(tiles, 'eDP-1', 'left')), 'eDP-1@0x0');
 });
 
 test('the keyword echoes the mode and scale back and only changes the position', () => {
@@ -128,7 +157,7 @@ test('the signature identifies the set of screens, whatever their order', () => 
 
 test('a saved layout comes back on the same screens and is refused on any other set', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
-    const saved = savedLayout(moveToSide(tiles, 'desc:HAK TYPEC 0x01010101', 'left'));
+    const saved = savedLayout(moveToSide(tiles, 'DP-3', 'left'));
     const restored = restoreLayout(tiles, saved);
     assert.equal(at(restored), 'DP-3@0x0 eDP-1@1600x0');
     assert.equal(restoreLayout(fromMonitors([LAPTOP]), saved), null);
@@ -141,8 +170,8 @@ test('a saved layout whose monitors would overlap is refused', () => {
     const overlapping = {
         signature: layoutSignature(tiles),
         positions: [
-            { key: monitorKey(LAPTOP), x: 0, y: 0 },
-            { key: monitorKey(EXTERNAL), x: 100, y: 100 }
+            { key: describeMonitor(LAPTOP), x: 0, y: 0 },
+            { key: describeMonitor(EXTERNAL), x: 100, y: 100 }
         ]
     };
     assert.equal(restoreLayout(tiles, overlapping), null);
@@ -151,6 +180,6 @@ test('a saved layout whose monitors would overlap is refused', () => {
 test('a changed position is detected, so applying can be skipped when nothing moved', () => {
     const tiles = fromMonitors([LAPTOP, EXTERNAL]);
     assert.equal(samePositions(tiles, fromMonitors([EXTERNAL, LAPTOP])), true);
-    assert.equal(samePositions(tiles, moveToSide(tiles, 'desc:HAK TYPEC 0x01010101', 'left')), false);
+    assert.equal(samePositions(tiles, moveToSide(tiles, 'DP-3', 'left')), false);
     assert.equal(samePositions(tiles, fromMonitors([LAPTOP])), false);
 });

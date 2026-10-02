@@ -220,7 +220,9 @@ Display panel and your `monitors.lua`. It lasts until the next Hyprland reload.
 Hyprland restarts the layer surfaces on every screen that moves, so the Overview
 closes when you apply.
 
-**Save** keeps the arrangement in `~/.local/state/omarchy-panorama/display-layouts.json`,
+**Save** keeps the arrangement in `display-layouts.json` inside Vista's state
+directory, which is `$XDG_STATE_HOME/omarchy-panorama` when that variable is set
+and `~/.local/state/omarchy-panorama` otherwise,
 under a signature built from the monitors' descriptions, and applies it. When
 those same screens are connected again, the layout is put back. A different set
 of screens finds no entry, so a layout saved at the desk is never applied to a

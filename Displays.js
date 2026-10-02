@@ -29,14 +29,40 @@ function logicalSize(monitor) {
     return isRotated(monitor?.transform) ? { w: height, h: width } : { w: width, h: height };
 }
 
-// External connector names move between plugs on a dock, so a description is
-// the stabler key for saved layouts. Built-in panels and anything without a
-// description fall back to the connector name.
-function monitorKey(monitor) {
+// Two identities per monitor, because the two jobs pull in opposite directions.
+//
+// `key` is the connector name: unique while the session runs, which is what
+// selecting and moving a single tile needs.
+//
+// `match` is what a saved layout is looked up by, and it prefers the
+// description, because connector names move between plugs on a dock. Twin
+// monitors of the same model report the same description, so duplicates get an
+// ordinal appended, assigned by connector name so the pairing is stable from one
+// session to the next. Two identical screens are interchangeable anyway: if the
+// dock hands them over in the other order, the layout still fits.
+function describeMonitor(monitor) {
     const description = String(monitor?.description ?? "").trim();
     if (description.length > 0)
         return `desc:${description}`;
     return String(monitor?.name ?? "");
+}
+
+function assignMatchKeys(tiles) {
+    const counts = {};
+    for (var i = 0; i < tiles.length; ++i)
+        counts[tiles[i].describedAs] = (counts[tiles[i].describedAs] || 0) + 1;
+    const ordinals = {};
+    const byConnector = tiles.slice().sort((a, b) => a.name.localeCompare(b.name));
+    for (var j = 0; j < byConnector.length; ++j) {
+        const tile = byConnector[j];
+        if (counts[tile.describedAs] > 1) {
+            ordinals[tile.describedAs] = (ordinals[tile.describedAs] || 0) + 1;
+            tile.match = `${tile.describedAs}#${ordinals[tile.describedAs]}`;
+        } else {
+            tile.match = tile.describedAs;
+        }
+    }
+    return tiles;
 }
 
 function fromMonitors(monitors) {
@@ -50,7 +76,9 @@ function fromMonitors(monitors) {
         if (size.w <= 0 || size.h <= 0)
             continue;
         tiles.push({
-            key: monitorKey(monitor),
+            key: String(monitor.name ?? ""),
+            describedAs: describeMonitor(monitor),
+            match: "",
             name: String(monitor.name ?? ""),
             description: String(monitor.description ?? ""),
             x: Math.round(Number(monitor.x) || 0),
@@ -65,6 +93,7 @@ function fromMonitors(monitors) {
             focused: monitor.focused === true
         });
     }
+    assignMatchKeys(tiles);
     tiles.sort((a, b) => (a.x - b.x) || (a.y - b.y) || a.name.localeCompare(b.name));
     return tiles;
 }
@@ -413,7 +442,7 @@ function samePositions(a, b) {
 // next place.
 function layoutSignature(tiles) {
     return (Array.isArray(tiles) ? tiles : [])
-        .map(tile => tile.key)
+        .map(tile => tile.match)
         .filter(key => String(key ?? "").length > 0)
         .sort()
         .join("|");
@@ -423,7 +452,7 @@ function savedLayout(tiles) {
     return {
         signature: layoutSignature(tiles),
         positions: (Array.isArray(tiles) ? tiles : []).map(tile => ({
-            key: tile.key,
+            key: tile.match,
             name: tile.name,
             x: Math.round(Number(tile.x) || 0),
             y: Math.round(Number(tile.y) || 0)
@@ -440,7 +469,7 @@ function restoreLayout(tiles, saved) {
         return null;
     const positions = Array.isArray(saved.positions) ? saved.positions : [];
     for (var i = 0; i < out.length; ++i) {
-        const match = positions.find(entry => entry.key === out[i].key);
+        const match = positions.find(entry => entry.key === out[i].match);
         if (!match)
             return null;
         out[i].x = Math.round(Number(match.x) || 0);
