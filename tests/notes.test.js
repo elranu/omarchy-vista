@@ -8,7 +8,8 @@ vm.runInContext(fs.readFileSync(require.resolve('../Notes.js'), 'utf8'), context
 const {
     DEFAULT_DIRECTORY, expandPath, dateStamp, clockStamp, dailyName, slugify,
     fileNameFor, isSafeFileName, parseListing, titleFromName, titleFromContent,
-    snippet, filterNotes, appendCapture, newNoteContent, renameTarget, uniqueFileName
+    snippet, filterNotes, appendCapture, newNoteContent, renameTarget, uniqueFileName,
+    listingTotal, applyHeadings, LISTING_LIMIT
 } = context;
 
 const AT = new Date(2026, 9, 2, 14, 32, 5);
@@ -37,13 +38,21 @@ test('a title becomes a plain file name that cannot leave the folder', () => {
     assert.equal(fileNameFor('   ', AT), '2026-10-02-143205.md');
 });
 
-test('only a plain file name inside the folder is accepted for writing', () => {
+test('the write guard checks containment, not spelling', () => {
     assert.equal(isSafeFileName('nota.md'), true);
     assert.equal(isSafeFileName('2026-10-02.md'), true);
     assert.equal(isSafeFileName('con espacio.md'), true);
+    // Notes written by hand or by Obsidian have names like these, and the app
+    // lists and edits them, so Save has to accept them too.
+    assert.equal(isSafeFileName('Reunión.md'), true);
+    assert.equal(isSafeFileName('Project (draft).md'), true);
+    assert.equal(isSafeFileName('日本語.md'), true);
+    assert.equal(isSafeFileName('Notas.MD'), true);
+    // What could leave the folder, hide the file or carry a control character.
     assert.equal(isSafeFileName('../fuera.md'), false);
     assert.equal(isSafeFileName('sub/nota.md'), false);
     assert.equal(isSafeFileName('.oculta.md'), false);
+    assert.equal(isSafeFileName('mala\nlinea.md'), false);
     assert.equal(isSafeFileName('nota.txt'), false);
     assert.equal(isSafeFileName(''), false);
 });
@@ -102,6 +111,34 @@ test('a capture is appended as one bullet and never rewrites what is there', () 
 test('a multi-line capture stays a single bullet', () => {
     assert.equal(appendCapture('', 'primera\nsegunda\ntercera', AT),
                  '# 2026-10-02\n\n- 14:32 primera\n  segunda\n  tercera\n');
+});
+
+test('a note holding only whitespace keeps its bytes', () => {
+    // The append contract is that what is there comes back untouched; only a
+    // genuinely empty file gets a heading.
+    assert.equal(appendCapture('   \n', 'algo', AT), '   \n- 14:32 algo\n');
+    assert.equal(appendCapture('', 'algo', AT), '# 2026-10-02\n\n- 14:32 algo\n');
+});
+
+test('titles come from each note\'s first heading, with the file name as fallback', () => {
+    const notes = parseListing(['300\t/n/ideas.md', '200\t/n/2026-10-02.md'].join('\n'), '/n');
+    const titled = applyHeadings(notes, '/n/ideas.md\t# Ideas de producto', '/n');
+    assert.equal(titled.map(note => note.title).join(','), 'Ideas de producto,2026-10-02');
+    // A heading of a different level, and a file with none at all.
+    assert.equal(applyHeadings(notes, '/n/ideas.md\t### Sub', '/n')[0].title, 'Sub');
+    assert.equal(applyHeadings(notes, '', '/n')[0].title, 'ideas');
+    // Positions are untouched by the titles pass.
+    assert.equal(titled.map(note => note.name).join(','), 'ideas.md,2026-10-02.md');
+});
+
+test('the listing reports how many notes there really were', () => {
+    const lines = [];
+    for (let i = 0; i < LISTING_LIMIT + 5; ++i)
+        lines.push(`${1000 + i}\t/n/nota-${i}.md`);
+    const text = lines.join('\n');
+    assert.equal(listingTotal(text), LISTING_LIMIT + 5);
+    assert.equal(parseListing(text, '/n').length, LISTING_LIMIT);
+    assert.equal(listingTotal('300\t/n/a.md\nbasura\n'), 1);
 });
 
 test('an empty capture changes nothing', () => {

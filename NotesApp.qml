@@ -44,7 +44,8 @@ MiniApp {
         { key: "Ctrl S", label: "Save" },
         { key: "Ctrl N", label: "New" },
         { key: "Ctrl F", label: "Search" },
-        { key: "F2", label: "Rename" }
+        { key: "F2", label: "Rename" },
+        { key: "↑↓", label: "Pick" }
     ]
 
     signal captured(string message)
@@ -59,9 +60,29 @@ MiniApp {
         }
     }
 
+    // Moves the selection through the filtered list, so the list is reachable
+    // without the mouse: the rows themselves cannot take focus while the search
+    // box has it, which is where typing leaves you.
+    function step(delta) {
+        const notes = root.visibleNotes;
+        if (notes.length === 0)
+            return;
+        var index = notes.findIndex(note => note.name === root.selectedName);
+        index = index < 0 ? (delta > 0 ? 0 : notes.length - 1)
+                          : Math.max(0, Math.min(notes.length - 1, index + delta));
+        root.select(notes[index].name);
+        list.currentIndex = index;
+    }
+
     function select(name) {
-        if (root.dirty && name !== root.selectedName)
+        if (root.dirty && name !== root.selectedName) {
             root.save();
+            // The save was refused and the edit is still unsaved: leaving the
+            // note open is better than navigating away from text that only
+            // exists in this editor.
+            if (root.dirty)
+                return;
+        }
         root.selectedName = name;
         root.loadedText = "";
         root.editorText = "";
@@ -152,6 +173,14 @@ MiniApp {
         }
         if (event.key === Qt.Key_Slash) {
             filterField.forceActiveFocus();
+            return true;
+        }
+        if (event.key === Qt.Key_Down || event.key === Qt.Key_PageDown) {
+            root.step(1);
+            return true;
+        }
+        if (event.key === Qt.Key_Up || event.key === Qt.Key_PageUp) {
+            root.step(-1);
             return true;
         }
         return false;
@@ -297,6 +326,20 @@ MiniApp {
                             NotesStore.searchContents(text);
                         }
 
+                        Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Down) {
+                                root.step(1);
+                                event.accepted = true;
+                            } else if (event.key === Qt.Key_Up) {
+                                root.step(-1);
+                                event.accepted = true;
+                            } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                                       && root.visibleNotes.length > 0) {
+                                root.select(root.visibleNotes[0].name);
+                                event.accepted = true;
+                            }
+                        }
+
                         StyledText {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: filterField.text.length === 0
@@ -314,6 +357,10 @@ MiniApp {
                     clip: true
                     spacing: 4
                     model: root.visibleNotes
+                    currentIndex: root.visibleNotes.findIndex(note => note.name === root.selectedName)
+                    highlightMoveDuration: 90
+                    // Keeps the keyboard selection on screen.
+                    onCurrentIndexChanged: list.positionViewAtIndex(list.currentIndex, ListView.Contain)
 
                     delegate: Rectangle {
                         id: row
@@ -577,12 +624,58 @@ MiniApp {
                     }
                 }
 
-                StyledText {
+                // The folder, and the only way to change it: typing a path here
+                // is what points Notes at a vault instead of its own directory.
+                RowLayout {
                     Layout.fillWidth: true
-                    text: `Folder: ${NotesStore.directory}`
-                    color: TuiStyle.dim
-                    font.pixelSize: 10
-                    elide: Text.ElideMiddle
+                    spacing: 6
+
+                    StyledText {
+                        text: "Folder"
+                        color: TuiStyle.dim
+                        font.pixelSize: 10
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 22
+                        radius: 4
+                        color: folderField.activeFocus ? TuiStyle.surfaceSubtle : "transparent"
+                        border.width: folderField.activeFocus ? 1 : 0
+                        border.color: TuiStyle.accent
+
+                        TextInput {
+                            id: folderField
+                            anchors.fill: parent
+                            anchors.leftMargin: 6
+                            anchors.rightMargin: 6
+                            verticalAlignment: TextInput.AlignVCenter
+                            text: NotesStore.directory
+                            color: TuiStyle.dim
+                            font.pixelSize: 10
+                            selectByMouse: true
+                            onAccepted: {
+                                NotesStore.setDirectory(folderField.text);
+                                root.select("");
+                            }
+                            Keys.onPressed: event => {
+                                if (event.key === Qt.Key_Escape) {
+                                    folderField.text = NotesStore.directory;
+                                    editor.forceActiveFocus();
+                                    event.accepted = true;
+                                }
+                            }
+                        }
+                    }
+
+                    StyledText {
+                        // Not a silent truncation: say when older notes are not
+                        // in the list.
+                        visible: NotesStore.noteTotal > NotesStore.notes.length
+                        text: `newest ${NotesStore.notes.length} of ${NotesStore.noteTotal}`
+                        color: TuiStyle.dim
+                        font.pixelSize: 10
+                    }
                 }
             }
         }

@@ -9,8 +9,10 @@
 
 var DEFAULT_DIRECTORY = "~/.Vista/Notes";
 // A listing of a notes folder is read once per open; this is the ceiling on how
-// many notes are kept in memory and drawn in the list.
-var LISTING_LIMIT = 500;
+// many notes are kept in memory and drawn in the list. `listingTotal` reports
+// how many there really are, so the app can say when it is showing a slice
+// rather than quietly hiding the older ones.
+var LISTING_LIMIT = 1000;
 
 function expandPath(path, home) {
     var value = String(path ?? "").trim();
@@ -72,17 +74,25 @@ function fileNameFor(title, date) {
 
 // Guards every path that reaches a write: the app only ever writes a bare file
 // name inside the notes directory.
+//
+// What it checks is containment, not spelling. Notes written by hand or by
+// Obsidian are called things like "Reunión.md" or "Project (draft).md", and the
+// app lists and edits them, so refusing those characters would offer an editor
+// whose Save could never work. Only what could leave the directory, hide the
+// file or confuse a shell is rejected.
 function isSafeFileName(name) {
     const value = String(name ?? "");
-    if (value.length === 0 || value.length > 120)
+    if (value.length === 0 || value.length > 160)
         return false;
+    // A leading dot hides the file; "." and ".." are directories.
     if (value.startsWith("."))
         return false;
     if (value.indexOf("/") >= 0 || value.indexOf("\\") >= 0)
         return false;
-    if (value.indexOf("..") >= 0)
+    // Control characters, including a newline smuggled into a title.
+    if (/[\x00-\x1f\x7f]/.test(value))
         return false;
-    return /^[A-Za-z0-9 ._-]+\.md$/.test(value);
+    return /\.md$/i.test(value);
 }
 
 // `find -printf '%T@\t%p\n'`, newest first. A listing is the only way the app
@@ -112,6 +122,48 @@ function parseListing(text, directory) {
     }
     out.sort((a, b) => (b.mtime - a.mtime) || a.name.localeCompare(b.name));
     return out.slice(0, LISTING_LIMIT);
+}
+
+// How many notes the listing really held, whatever the cap kept.
+function listingTotal(text) {
+    const lines = String(text ?? "").split("\n");
+    var total = 0;
+    for (var i = 0; i < lines.length; ++i) {
+        const tab = lines[i].indexOf("\t");
+        if (tab > 0 && isFinite(parseFloat(lines[i].slice(0, tab))))
+            total += 1;
+    }
+    return total;
+}
+
+// Titles come from each note's first Markdown heading when it has one, which is
+// what the user typed, rather than from the slug in the file name. The headings
+// arrive as "<path>\t<heading line>" from one pass over the folder.
+function applyHeadings(notes, text, directory) {
+    const prefix = `${String(directory ?? "")}/`;
+    const headings = {};
+    const lines = String(text ?? "").split("\n");
+    for (var i = 0; i < lines.length; ++i) {
+        const tab = lines[i].indexOf("\t");
+        if (tab <= 0)
+            continue;
+        const path = lines[i].slice(0, tab);
+        const heading = titleFromContent(lines[i].slice(tab + 1), "");
+        if (heading.length > 0)
+            headings[path] = heading;
+    }
+    const list = Array.isArray(notes) ? notes : [];
+    const out = [];
+    for (var j = 0; j < list.length; ++j) {
+        const note = list[j];
+        const heading = headings[note.path]
+            ?? headings[`${prefix}${note.name}`]
+            ?? "";
+        out.push(Object.assign({}, note, {
+            title: heading.length > 0 ? heading : titleFromName(note.name)
+        }));
+    }
+    return out;
 }
 
 function titleFromName(name) {
@@ -182,7 +234,10 @@ function appendCapture(content, text, date) {
     for (var i = 1; i < lines.length; ++i)
         bullet += `\n  ${lines[i].trim()}`;
     var existing = String(content ?? "");
-    if (existing.trim().length === 0)
+    // Only a genuinely empty file gets a heading. A note holding nothing but
+    // whitespace still holds bytes, and the contract is that what is there comes
+    // back untouched.
+    if (existing.length === 0)
         return `# ${dateStamp(date)}\n\n${bullet}\n`;
     if (!existing.endsWith("\n"))
         existing += "\n";
