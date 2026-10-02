@@ -198,7 +198,8 @@ Adding one is a QML file based on `MiniApp.qml` plus an entry in `MiniApps.js`.
 Search for `notes` (also `nota`, `notas`, `diario`) and press Enter. The panel has
 three parts:
 
-- **Quick capture** at the top. Whatever you type goes to the note for today,
+- **Quick capture** at the top, with the cursor already in it when Notes opens,
+  so you can start typing straight away. Whatever you type goes to the note for today,
   named after the date, as one bullet with the time in front of it:
   `- 14:32 call the accountant`. `Ctrl+Enter` files it. A capture is **appended**,
   so it can never overwrite what is already in the note, and a multi-line capture

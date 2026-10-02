@@ -241,6 +241,13 @@ Scope {
             visible: GlobalStates.overviewOpen
                 && (!OverviewSwitchingController.grabbed || panelWindow.isFocusedOverviewWindow)
 
+            // An open mini app that keeps its own cursor, such as Notes' capture
+            // box. Search mode ending and other focus restores leave it alone,
+            // or they would pull the cursor out from under the user.
+            readonly property bool miniAppTakesKeyboard: GlobalStates.overviewMiniApp.length > 0
+                && !!miniAppLoader.item
+                && typeof miniAppLoader.item.focusInitial === "function"
+
             WlrLayershell.namespace: "quickshell:overview"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.keyboardFocus: panelWindow.isFocusedOverviewWindow
@@ -505,7 +512,8 @@ Scope {
                         if (GlobalStates.overviewOpen
                             && panelWindow.isFocusedOverviewWindow
                             && !OverviewSwitchingController.grabbed
-                            && !GlobalStates.overviewSearchMode)
+                            && !GlobalStates.overviewSearchMode
+                            && !panelWindow.miniAppTakesKeyboard)
                             overviewKeyHandler.forceActiveFocus();
                     }
                     function onOverviewSearchModeChanged() {
@@ -514,7 +522,8 @@ Scope {
                         if (!GlobalStates.overviewSearchMode
                             && panelWindow.isFocusedOverviewWindow
                             && GlobalStates.overviewOpen
-                            && !OverviewSwitchingController.grabbed)
+                            && !OverviewSwitchingController.grabbed
+                            && !panelWindow.miniAppTakesKeyboard)
                             Qt.callLater(() => { overviewKeyHandler.forceActiveFocus(); });
                     }
                     function onSuperDownChanged() {
@@ -611,7 +620,13 @@ Scope {
                                 GlobalStates.overviewMiniApp = "";
                                 GlobalStates.overviewOpen = false;
                             });
-                        overviewKeyHandler.forceActiveFocus();
+                        // An app with somewhere to type -- Notes' capture box --
+                        // gets the cursor there; the others keep the Overview's
+                        // key handler, which forwards keys to their handleKey.
+                        if (typeof app.focusInitial === "function")
+                            Qt.callLater(() => app.focusInitial());
+                        else
+                            overviewKeyHandler.forceActiveFocus();
                     }
                 }
 

@@ -45,6 +45,8 @@ FloatingWindow {
                 if ("expression" in item)
                     item.expression = window.input;
                 item.closeRequested.connect(() => window.dismissed());
+                if (typeof item.focusInitial === "function")
+                    Qt.callLater(() => item.focusInitial());
             }
         }
 
