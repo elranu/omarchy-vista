@@ -24,6 +24,10 @@ MiniApp {
     // The note was rewritten on disk while it was being edited here.
     property bool externalChange: false
     property bool renaming: false
+    // The note the context menu was opened on, and where to draw it.
+    property string menuName: ""
+    property real menuX: 0
+    property real menuY: 0
     readonly property bool dirty: root.selectedName.length > 0 && root.editorText !== root.loadedText
     readonly property var visibleNotes:
         Notes.filterNotes(NotesStore.notes, root.query, NotesStore.contentMatches)
@@ -63,6 +67,7 @@ MiniApp {
         root.editorText = "";
         root.externalChange = false;
         root.renaming = false;
+        root.menuName = "";
         noteFile.path = name.length > 0 ? NotesStore.pathFor(name) : "";
         noteFile.reload();
         if (name.length > 0)
@@ -78,15 +83,27 @@ MiniApp {
         }
     }
 
+    // Right-click menu. MiniApp routes a subclass's children into its content
+    // area, so the menu is positioned in that area's coordinates and clamped to
+    // it: this is a plain item, not a popup surface, so a menu past the edge
+    // would be clipped rather than flipped by the compositor.
+    function openMenu(name, position) {
+        root.menuName = name;
+        root.menuX = position.x;
+        root.menuY = position.y;
+    }
+
+    function closeMenu() {
+        root.menuName = "";
+    }
+
     function startRename() {
         if (root.selectedName.length === 0)
             return;
-        root.renaming = true;
         renameField.text = root.selectedName;
-        Qt.callLater(() => {
-            renameField.forceActiveFocus();
-            renameField.selectAll();
-        });
+        // The field focuses itself once it is visible; see onVisibleChanged.
+        root.renaming = true;
+        renameField.forceActiveFocus();
     }
 
     function commitRename() {
@@ -112,6 +129,10 @@ MiniApp {
     // Keys that reach the frame rather than a focused text field: the Overview
     // forwards them here while this app is open.
     function handleKey(event) {
+        if (root.menuName.length > 0 && event.key === Qt.Key_Escape) {
+            root.closeMenu();
+            return true;
+        }
         if (event.key === Qt.Key_F && (event.modifiers & Qt.ControlModifier)) {
             filterField.forceActiveFocus();
             return true;
@@ -332,7 +353,15 @@ MiniApp {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.select(row.modelData.name)
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                            onClicked: mouse => {
+                                if (mouse.button === Qt.RightButton)
+                                    root.openMenu(row.modelData.name,
+                                                  rowMouse.mapToItem(contextMenu.parent, mouse.x, mouse.y));
+                                else
+                                    root.select(row.modelData.name);
+                            }
                         }
                     }
 
@@ -417,6 +446,26 @@ MiniApp {
                         color: TuiStyle.surfaceSubtle
                         border.width: 1
                         border.color: TuiStyle.accent
+
+                        // forceActiveFocus on an item that is still hidden does
+                        // nothing, so the field claims the keyboard the moment it
+                        // appears rather than a frame too early. The retry is for
+                        // the other half of the problem: the Overview's layer
+                        // takes keyboard focus on demand, so the surface may only
+                        // get it a frame after the click that opened the menu.
+                        onVisibleChanged: {
+                            if (visible)
+                                renameFocus.restart();
+                        }
+
+                        Timer {
+                            id: renameFocus
+                            interval: 80
+                            onTriggered: {
+                                renameField.forceActiveFocus();
+                                renameField.selectAll();
+                            }
+                        }
 
                         TextInput {
                             id: renameField
@@ -531,6 +580,98 @@ MiniApp {
                     elide: Text.ElideMiddle
                 }
             }
+        }
+    }
+
+    // Dismissed by a click anywhere else, the way a menu is expected to behave.
+    MouseArea {
+        anchors.fill: parent
+        visible: root.menuName.length > 0
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        z: 50
+        onClicked: root.closeMenu()
+    }
+
+    Rectangle {
+        id: contextMenu
+        visible: root.menuName.length > 0
+        x: Math.max(0, Math.min(root.menuX, (contextMenu.parent?.width ?? 0) - contextMenu.width))
+        y: Math.max(0, Math.min(root.menuY, (contextMenu.parent?.height ?? 0) - contextMenu.height))
+        z: 51
+        width: 180
+        height: menuColumn.implicitHeight + 10
+        radius: 8
+        color: TuiStyle.bg
+        border.width: 1
+        border.color: TuiStyle.accent
+
+        ColumnLayout {
+            id: menuColumn
+            anchors.fill: parent
+            anchors.margins: 5
+            spacing: 2
+
+            MenuRow {
+                label: "Open"
+                onActivated: {
+                    root.select(root.menuName);
+                    root.closeMenu();
+                }
+            }
+
+            MenuRow {
+                label: "Rename"
+                keyHint: "F2"
+                onActivated: {
+                    const name = root.menuName;
+                    root.closeMenu();
+                    root.select(name);
+                    root.startRename();
+                }
+            }
+        }
+    }
+
+    component MenuRow: Rectangle {
+        id: menuRow
+
+        property string label: ""
+        property string keyHint: ""
+
+        signal activated()
+
+        Layout.fillWidth: true
+        implicitHeight: 28
+        radius: 5
+        color: menuRowMouse.containsMouse ? TuiStyle.surfaceHover : "transparent"
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 9
+            anchors.rightMargin: 9
+            spacing: 6
+
+            StyledText {
+                Layout.fillWidth: true
+                text: menuRow.label
+                color: TuiStyle.fg
+                font.pixelSize: 12
+            }
+
+            StyledText {
+                text: menuRow.keyHint
+                visible: menuRow.keyHint.length > 0
+                color: TuiStyle.dim
+                font.pixelSize: 10
+            }
+        }
+
+        MouseArea {
+            id: menuRowMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: menuRow.activated()
         }
     }
 
