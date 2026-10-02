@@ -23,6 +23,8 @@
   to the generic one.
 - A note that changes on disk while it is open in the editor says so above the
   editor and offers to reload, instead of being overwritten by the next save.
+  Closing the panel in that state keeps the edit as a conflict copy beside the
+  note rather than overwriting the newer version.
 - New **Displays** mini app: every connected monitor as a tile drawn at its
   logical size, draggable to where the screen stands on the desk. Tiles snap to
   their neighbours' edges and centres, a tile dropped on another slides to the

@@ -24,6 +24,9 @@ MiniApp {
     // The note was rewritten on disk while it was being edited here.
     property bool externalChange: false
     property bool renaming: false
+    // Set while the editor's file view is moved to a renamed note: that load
+    // is the same text under a new name, not a change made somewhere else.
+    property bool repointing: false
     // The note the context menu was opened on, and where to draw it.
     property string menuName: ""
     property real menuX: 0
@@ -118,6 +121,34 @@ MiniApp {
         root.menuName = "";
     }
 
+    // What closing does with unsaved text. Normally it saves. If the note
+    // changed on disk while it was open, saving would overwrite that newer
+    // version without the user having chosen to, so the edit goes to a conflict
+    // copy beside the note instead, and both survive.
+    function saveOnLeave() {
+        if (!root.dirty)
+            return;
+        if (root.externalChange) {
+            NotesStore.saveConflictCopy(root.selectedName, root.editorText);
+            return;
+        }
+        root.save();
+    }
+
+    // Changing folders with an unsaved edit: the edit is saved where it
+    // belongs first, and the change is abandoned if that fails, because once
+    // the folder moves the same file name would point into the new one.
+    function changeFolder(path) {
+        if (root.dirty) {
+            root.save();
+            if (root.dirty)
+                return false;
+        }
+        root.select("");
+        NotesStore.setDirectory(path);
+        return true;
+    }
+
     function startRename() {
         if (root.selectedName.length === 0)
             return;
@@ -131,9 +162,9 @@ MiniApp {
         if (!root.renaming)
             return;
         root.renaming = false;
-        // The editor keeps the text it has; the file view is only repointed once
-        // the move has actually happened, in onRenamed below. Pointing it at the
-        // new name straight away raced the mv and emptied the editor.
+        // The store copies the note and confirms it before returning, then
+        // onRenamed below repoints the editor; nothing is left in flight for a
+        // quick save or a note switch to race.
         NotesStore.rename(root.selectedName, renameField.text);
         editor.forceActiveFocus();
     }
@@ -194,11 +225,11 @@ MiniApp {
 
     // Saving on the way out: closing the panel with unsaved text in the editor
     // would otherwise throw it away without asking.
-    Component.onDestruction: root.save()
+    Component.onDestruction: root.saveOnLeave()
 
     // Escape or the Close keycap: the editor's text is written before the panel
     // goes away, so closing never silently drops an edit.
-    onCloseRequested: root.save()
+    onCloseRequested: root.saveOnLeave()
 
 
     Connections {
@@ -207,6 +238,7 @@ MiniApp {
         function onRenamed(from, to) {
             if (from !== root.selectedName)
                 return;
+            root.repointing = true;
             root.selectedName = to;
             noteFile.path = NotesStore.pathFor(to);
         }
@@ -224,6 +256,12 @@ MiniApp {
             const keepEdit = root.dirty;
             const text = noteFile.text();
             root.loadedText = text;
+            if (root.repointing) {
+                root.repointing = false;
+                if (!keepEdit)
+                    root.editorText = text;
+                return;
+            }
             if (keepEdit)
                 root.externalChange = true;
             else
@@ -288,6 +326,39 @@ MiniApp {
                     primary: true
                     enabled: captureField.text.trim().length > 0
                     onActivated: root.capture()
+                }
+            }
+        }
+
+        // Failures and refusals from the store. Without this they only reached
+        // a property nothing displayed, which is the same as failing silently.
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 30
+            visible: NotesStore.error.length > 0
+            radius: 6
+            color: TuiStyle.surfaceRaised
+            border.width: 1
+            border.color: TuiStyle.accent
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 10
+                anchors.rightMargin: 6
+                spacing: 8
+
+                StyledText {
+                    Layout.fillWidth: true
+                    text: NotesStore.error
+                    color: TuiStyle.fg
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                }
+
+                MiniAppIconButton {
+                    icon: "apply"
+                    tooltip: "Dismiss"
+                    onActivated: NotesStore.clearError()
                 }
             }
         }
@@ -655,8 +726,8 @@ MiniApp {
                             font.pixelSize: 10
                             selectByMouse: true
                             onAccepted: {
-                                NotesStore.setDirectory(folderField.text);
-                                root.select("");
+                                if (!root.changeFolder(folderField.text))
+                                    folderField.text = NotesStore.directory;
                             }
                             Keys.onPressed: event => {
                                 if (event.key === Qt.Key_Escape) {

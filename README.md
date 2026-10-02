@@ -217,16 +217,19 @@ three parts:
   button writes it. The toolbar buttons are icons; hovering one says what it
   does. Closing the panel saves first, so an edit is never dropped
   silently, and the file is written atomically. If the note changes on disk while
-  you have it open, a line above the editor says so and offers to reload, rather
-  than overwriting that version without telling you.
+  you have it open, a line above the editor says so and offers to reload. Closing
+  the panel in that state does not overwrite the newer version: your edit is kept
+  as a separate note beside it, `ideas (conflict 2026-10-02 1633).md`, and both
+  survive. Anything that fails to write is shown in a line above the list.
 
 **Renaming**: right-click a note in the list for a small menu with **Open** and
 **Rename**, or press `F2` or `Ctrl+R` with the note open. Either way the file name
 turns into a field, with a ✓ button to apply it. The new name is slugified the same way a new note's title is, so
 `Ideas de Producto` becomes `ideas-de-producto.md`; a name typed with `.md` is
 kept as given. A name that is already taken gets a numeric suffix
-(`ideas-2.md`), and the move is a `mv -n`, so renaming can never overwrite
-another note. The note stays open under its new name with whatever you had
+(`ideas-2.md`), so renaming can never overwrite another note. The note is copied
+to its new name and confirmed on disk before the old file is removed, so it is
+finished by the time you can type again and stays open with whatever you had
 typed.
 
 `Ctrl+N` jumps to the title box for a new note; the title becomes the heading and
@@ -235,7 +238,9 @@ a plain file name derived from it, for example `ideas-de-producto.md`.
 Notes are Markdown files in one folder, `~/.Vista/Notes` by default. The folder is
 created the first time you open the app, never before. The path is the **Folder**
 field at the bottom of the panel: type another one, press Enter, and Notes works
-there instead, remembered in `notes.json` in Vista's state directory. Point it at
+there instead, creating it if it does not exist. An unsaved edit is saved where it
+belongs before the folder changes, and the change is abandoned if that save fails.
+The new folder is remembered in `notes.json` in Vista's state directory. Point it at
 an Obsidian vault and the notes already in it are listed, opened and saved as
 they are, accents, spaces and parentheses included.
 
