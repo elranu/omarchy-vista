@@ -100,6 +100,13 @@ Scope {
             JSON.stringify({ icon: "\uF1EC", message: `Copied ${value}`, duration: 1400 })]);
     }
 
+    // Saving a layout while nothing moved shows no other sign, so the OSD is
+    // the confirmation. The icon is a display glyph from the Nerd Font set.
+    function showLayoutSavedOsd() {
+        Quickshell.execDetached(["omarchy-shell", "-q", "osd", "show",
+            JSON.stringify({ icon: "\uF108", message: "Display layout saved", duration: 1400 })]);
+    }
+
     function isFocusedScreen(screen) {
         return screen?.name === overviewScope.focusedScreen?.name;
     }
@@ -573,6 +580,16 @@ Scope {
                         app.closeRequested.connect(() => { GlobalStates.overviewMiniApp = ""; });
                         if (app.copied)
                             app.copied.connect(value => overviewScope.showCopiedOsd(value));
+                        // A monitor layout change restarts the layer surfaces,
+                        // so the overview is on its way out anyway: close it
+                        // instead of leaving a half-dead panel on screen.
+                        if (app.saved)
+                            app.saved.connect(() => overviewScope.showLayoutSavedOsd());
+                        if (app.applied)
+                            app.applied.connect(() => {
+                                GlobalStates.overviewMiniApp = "";
+                                GlobalStates.overviewOpen = false;
+                            });
                         overviewKeyHandler.forceActiveFocus();
                     }
                 }

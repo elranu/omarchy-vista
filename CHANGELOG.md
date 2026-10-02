@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+- New **Displays** mini app: every connected monitor as a tile drawn at its
+  logical size, draggable to where the screen stands on the desk. Tiles snap to
+  their neighbours' edges and centres, a tile dropped on another slides to the
+  nearest free side, a tile dropped in empty space is pulled back against the
+  others, and the layout is normalised to `0x0`, so there are no overlapping
+  screens and no gaps the pointer gets stuck in. Arrow keys or `h j k l` move
+  the selected screen, and pressing the same key again slides it along that side.
+- Applying only sets positions: each monitor's mode and scale are echoed back
+  exactly as `hyprctl monitors` reports them, in a single `hyprctl --batch` call
+  so Hyprland never sees an intermediate overlapping layout.
+- A layout can be saved for the exact set of connected screens, in Vista's own
+  state file (`display-layouts.json`), and is put back when those same screens
+  appear again. Nothing is written to the Hyprland configuration, and a set of
+  screens with no saved layout is left to `monitors.lua`. The new gear-panel
+  toggle **Restore saved display layouts** turns the restoring off.
+
 ## 0.2.5
 
 - The icon file index only covers the icons the desktop entries actually

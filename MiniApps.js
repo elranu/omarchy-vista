@@ -9,6 +9,14 @@ var MINI_APPS = [
         icon: "calculator",
         source: "CalculatorApp.qml",
         keywords: ["calc", "calculator", "calculadora", "math", "maths", "arithmetic"]
+    },
+    {
+        id: "displays",
+        title: "Displays",
+        subtitle: "Arrange your monitors",
+        icon: "monitor",
+        source: "DisplaysApp.qml",
+        keywords: ["display", "displays", "monitor", "monitors", "monitores", "pantalla", "pantallas", "screen", "screens", "layout", "arrange"]
     }
 ];
 

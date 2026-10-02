@@ -38,6 +38,9 @@ See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
   Win+number, Win+Tab, and Win+Shift+Tab.
 - Search for applications, open windows, and Omarchy menu actions from Overview,
   with a built-in calculator.
+- Arrange your monitors: the **Displays** mini app draws every screen at its
+  logical size and lets you drag them to where they stand on your desk. A layout
+  can be saved for that exact set of screens, in Vista's own state file.
 - Per-monitor workspace previews, configurable from the gear panel.
 - Right-click any part of the top-bar workspace widget to open Overview as a
   mouse fallback when the keyboard shortcut is unavailable.
@@ -187,6 +190,48 @@ closes it and leaves the Overview open.
 
 Adding one is a QML file based on `MiniApp.qml` plus an entry in `MiniApps.js`.
 
+### Displays
+
+Search for `displays` (also `monitor`, `pantalla`, `screen`) and press Enter.
+Every connected monitor is a tile, drawn at its **logical** size, which is the
+native resolution divided by the scale: a 2880×1800 panel at scale 1.6 is
+1800×1125 here, and that is the number the next monitor's position starts at, so
+the picture matches how Hyprland lays the screens out.
+
+Drag a tile to where that screen stands on your desk. Tiles snap to the edges
+and the centres of their neighbours, a tile dropped on top of another slides to
+the nearest free side, a tile dropped in empty space is pulled back against the
+others, and the layout always starts at `0x0`. No overlapping screens, and no
+gaps for the pointer to get stuck in.
+
+| Key | Action |
+| --- | --- |
+| `←` `→` `↑` `↓` or `h` `j` `k` `l` | Move the selected screen to that side; press again to slide it along |
+| `1`–`9`, `Tab` | Select a screen |
+| `Enter` | Apply to the running session |
+| `s` | Save for these screens and apply |
+| `u` | Undo changes that were not applied |
+| `r` | Reload the Hyprland config, undoing an applied layout |
+| `Escape` | Close |
+
+**Apply** only sets positions. The mode and the scale of each monitor are echoed
+back exactly as reported, so resolution and refresh rate stay with Omarchy's own
+Display panel and your `monitors.lua`. It lasts until the next Hyprland reload.
+Hyprland restarts the layer surfaces on every screen that moves, so the Overview
+closes when you apply.
+
+**Save** keeps the arrangement in `~/.local/state/omarchy-panorama/display-layouts.json`,
+under a signature built from the monitors' descriptions, and applies it. When
+those same screens are connected again, the layout is put back. A different set
+of screens finds no entry, so a layout saved at the desk is never applied to a
+projector somewhere else, and your `monitors.lua` keeps deciding what happens
+there. The gear panel's **Restore saved display layouts** turns the restoring
+off without throwing the saved layouts away, and **Forget** drops the one for
+the screens in front of you.
+
+Resolution, refresh rate, scale and rotation are not changed here; Omarchy's own
+Display panel owns those.
+
 The search index reads Omarchy's menu through `$OMARCHY_PATH`, so it does not
 assume `/usr/share/omarchy` and can be used on NixOS installations.
 
@@ -219,6 +264,9 @@ omarchy plugin list --json | jq '.[] | select(.id == "ranu.panorama")'
 - `WorkspaceOrder.qml` — persistent optimized workspace ordering.
 - `HyprlandData.qml` — workspace, monitor, and window state mapping.
 - `SettingsPanel.qml` — ordering-mode settings panel.
+- `Displays.js` — monitor layout geometry: logical sizes, snapping, overlap and gap repair.
+- `DisplaysApp.qml` — the Displays mini app: canvas, drag, apply and save.
+- `DisplayLayouts.qml` — saved layouts per set of screens, and restoring them.
 - `KeybindingService.qml` — automatic shortcut registration and cleanup.
 
 ## Validation
