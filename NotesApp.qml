@@ -253,7 +253,7 @@ MiniApp {
                     }
                 }
 
-                MiniApp.IconButton {
+                MiniAppIconButton {
                     icon: "capture"
                     tooltip: "File under today (Ctrl+Enter)"
                     primary: true
@@ -409,7 +409,7 @@ MiniApp {
                         }
                     }
 
-                    MiniApp.IconButton {
+                    MiniAppIconButton {
                         icon: "add"
                         tooltip: "New note (Ctrl+N)"
                         onActivated: root.createNote()
@@ -490,14 +490,14 @@ MiniApp {
                         }
                     }
 
-                    MiniApp.IconButton {
+                    MiniAppIconButton {
                         icon: "apply"
                         visible: root.renaming
                         tooltip: "Apply the new name (Enter)"
                         onActivated: root.commitRename()
                     }
 
-                    MiniApp.IconButton {
+                    MiniAppIconButton {
                         icon: "save"
                         tooltip: "Save the note (Ctrl+S)"
                         primary: true
@@ -532,7 +532,7 @@ MiniApp {
                             elide: Text.ElideRight
                         }
 
-                        MiniApp.IconButton {
+                        MiniAppIconButton {
                             icon: "refresh"
                             tooltip: "Take the version from disk"
                             onActivated: {

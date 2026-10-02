@@ -24,6 +24,7 @@ OverviewSearch 1.0 OverviewSearch.qml
 OverviewWidget 1.0 OverviewWidget.qml
 OverviewWindow 1.0 OverviewWindow.qml
 MiniApp 1.0 MiniApp.qml
+MiniAppIconButton 1.0 MiniAppIconButton.qml
 MiniAppWindow 1.0 MiniAppWindow.qml
 CalculatorApp 1.0 CalculatorApp.qml
 NotesApp 1.0 NotesApp.qml

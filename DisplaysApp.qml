@@ -327,30 +327,30 @@ MiniApp {
                 }
             }
 
-            MiniApp.IconButton {
+            MiniAppIconButton {
                 icon: "undo"
                 tooltip: "Undo unapplied changes (u)"
                 enabled: root.dirty
                 onActivated: root.undo()
             }
-            MiniApp.IconButton {
+            MiniAppIconButton {
                 icon: "refresh"
                 tooltip: "Reload the Hyprland config (r)"
                 onActivated: root.revert()
             }
-            MiniApp.IconButton {
+            MiniAppIconButton {
                 icon: "forget"
                 tooltip: "Forget the layout saved for these screens"
                 visible: root.hasSavedLayout
                 onActivated: root.forget()
             }
-            MiniApp.IconButton {
+            MiniAppIconButton {
                 icon: "apply"
                 tooltip: "Apply to this session (Enter)"
                 enabled: root.dirty
                 onActivated: root.apply()
             }
-            MiniApp.IconButton {
+            MiniAppIconButton {
                 icon: "save"
                 tooltip: "Save for these screens and apply (s)"
                 primary: true
