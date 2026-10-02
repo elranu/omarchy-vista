@@ -37,17 +37,27 @@ Item {
                  root.height - 2 * root.verticalMargin)
     // Pairs of { key, label } drawn as keycaps along the bottom.
     property var hints: []
+    // Set when the same app is hosted in a real window instead of over the
+    // workspace grid: the frame then fills the window, with no backdrop to dim
+    // and no panel border, because Hyprland draws the window's own.
+    property bool windowed: false
 
     default property alias content: contentArea.data
 
     signal closeRequested()
+    // Asked for from the title bar or with Ctrl+Enter: the same app, in a window
+    // Hyprland puts on a workspace.
+    signal popOutRequested()
 
     anchors.fill: parent
 
-    // Darkens the grid behind the panel and swallows clicks that miss it.
+    // Darkens the grid behind the panel and swallows clicks that miss it. In a
+    // window there is nothing behind to dim.
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
+        visible: !root.windowed
+        enabled: !root.windowed
         onClicked: root.closeRequested()
 
         Rectangle {
@@ -60,11 +70,11 @@ Item {
     Rectangle {
         id: panel
         anchors.centerIn: parent
-        width: root.panelWidth
-        height: root.panelHeight
-        radius: 10
+        width: root.windowed ? root.width : root.panelWidth
+        height: root.windowed ? root.height : root.panelHeight
+        radius: root.windowed ? 0 : 10
         color: TuiStyle.bg
-        border.width: 1
+        border.width: root.windowed ? 0 : 1
         border.color: TuiStyle.accent
 
         // Clicks inside the panel must not reach the backdrop above.
@@ -117,6 +127,13 @@ Item {
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
+                }
+
+                MiniAppKeycap {
+                    visible: !root.windowed
+                    keyLabel: "Ctrl ⏎"
+                    label: "Window"
+                    onActivated: root.popOutRequested()
                 }
 
                 MiniAppKeycap {

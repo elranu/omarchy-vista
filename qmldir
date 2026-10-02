@@ -13,6 +13,7 @@ singleton HyprlandData 1.0 HyprlandData.qml
 singleton OmarchyTheme 1.0 OmarchyTheme.qml
 singleton ServiceManager 1.0 ServiceManager.qml
 singleton TuiStyle 1.0 TuiStyle.qml
+singleton MiniAppWindows 1.0 MiniAppWindows.qml
 singleton Wallpaper 1.0 Wallpaper.qml
 singleton WorkspaceOrder 1.0 WorkspaceOrder.qml
 singleton WorkspaceNavigation 1.0 WorkspaceNavigation.qml
@@ -22,6 +23,7 @@ OverviewSearch 1.0 OverviewSearch.qml
 OverviewWidget 1.0 OverviewWidget.qml
 OverviewWindow 1.0 OverviewWindow.qml
 MiniApp 1.0 MiniApp.qml
+MiniAppWindow 1.0 MiniAppWindow.qml
 CalculatorApp 1.0 CalculatorApp.qml
 StyledText 1.0 StyledText.qml
 StyledImage 1.0 StyledImage.qml

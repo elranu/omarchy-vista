@@ -17,6 +17,13 @@
   appear again. Nothing is written to the Hyprland configuration, and a set of
   screens with no saved layout is left to `monitors.lua`. The new gear-panel
   toggle **Restore saved display layouts** turns the restoring off.
+- A mini app can be handed to a real window with `Ctrl+Enter` or the **Window**
+  keycap in its title bar: an xdg toplevel Hyprland puts on the current
+  workspace, tiles, and reaches with `Super`+number. The window is owned by the
+  always-loaded service, so it outlives the Overview that opened it, and what
+  was typed comes along. Its class is the shell's own `org.quickshell`, since
+  Quickshell's app id belongs to the process, so window rules match the title
+  `<App> — Vista`.
 - Mini apps open as a window rather than a small box: the panel takes a share of
   the Overview, with each app's own size as the floor, so the Displays canvas and
   the calculator both get the room they need on a large screen.

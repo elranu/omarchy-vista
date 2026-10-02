@@ -190,6 +190,23 @@ closes it and leaves the Overview open.
 
 Adding one is a QML file based on `MiniApp.qml` plus an entry in `MiniApps.js`.
 
+#### Open as a window
+
+`Ctrl+Enter`, or the **Window** keycap in the mini app's title bar, hands the
+same mini app to a real window: an xdg toplevel that Hyprland puts on the
+current workspace, tiles, and reaches with `Super`+number like any other window.
+The Overview closes as it opens, because the Overview holds the keyboard and
+would otherwise take the keys away from the new window. Whatever was typed comes
+along, so a calculation keeps going in the window. `Escape` closes it.
+
+Two things worth knowing:
+
+- The window's class is `org.quickshell`, shared with the rest of the shell,
+  because Quickshell's app id belongs to the process and cannot be set per
+  window. The title is `<App> — Vista`, so a window rule matches on that:
+  `hl.windowrule({ "float", "size 820 620" }, "title:.* — Vista")`.
+- The window belongs to the shell process, so `omarchy restart shell` closes it.
+
 ### Displays
 
 Search for `displays` (also `monitor`, `pantalla`, `screen`) and press Enter.
@@ -269,6 +286,9 @@ omarchy plugin list --json | jq '.[] | select(.id == "ranu.panorama")'
 - `Displays.js` — monitor layout geometry: logical sizes, snapping, overlap and gap repair.
 - `DisplaysApp.qml` — the Displays mini app: canvas, drag, apply and save.
 - `DisplayLayouts.qml` — saved layouts per set of screens, and restoring them.
+- `MiniApp.qml` — the shared mini app frame, over the grid or filling a window.
+- `MiniAppWindow.qml` — a mini app hosted in a real Hyprland window.
+- `MiniAppWindows.qml` — owns those windows, so they outlive the Overview.
 - `KeybindingService.qml` — automatic shortcut registration and cleanup.
 
 ## Validation

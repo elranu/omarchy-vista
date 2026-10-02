@@ -100,6 +100,18 @@ Scope {
             JSON.stringify({ icon: "\uF1EC", message: `Copied ${value}`, duration: 1400 })]);
     }
 
+    // Hands the open mini app to a window on the current workspace and gets out
+    // of the way: the Overview holds the keyboard, so leaving it open would take
+    // the keys away from the window that just appeared.
+    function popOutMiniApp(input) {
+        const id = GlobalStates.overviewMiniApp;
+        if (id.length === 0)
+            return;
+        MiniAppWindows.open(id, input);
+        GlobalStates.overviewMiniApp = "";
+        GlobalStates.overviewOpen = false;
+    }
+
     // Saving a layout while nothing moved shows no other sign, so the OSD is
     // the confirmation. The icon is a display glyph from the Nerd Font set.
     function showLayoutSavedOsd() {
@@ -336,10 +348,16 @@ Scope {
                     // closes it, it handles what it knows, and the rest is
                     // swallowed so nothing navigates the grid behind it.
                     if (GlobalStates.overviewMiniApp.length > 0) {
+                        const miniApp = miniAppLoader.item;
+                        const popOut = (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                            && (event.modifiers & Qt.ControlModifier);
                         if (event.key === Qt.Key_Escape)
                             GlobalStates.overviewMiniApp = "";
-                        else if (miniAppLoader.item?.handleKey)
-                            miniAppLoader.item.handleKey(event);
+                        else if (popOut)
+                            overviewScope.popOutMiniApp(
+                                miniApp && ("expression" in miniApp) ? miniApp.expression : "");
+                        else if (miniApp?.handleKey)
+                            miniApp.handleKey(event);
                         event.accepted = true;
                         return;
                     }
@@ -583,6 +601,9 @@ Scope {
                         // A monitor layout change restarts the layer surfaces,
                         // so the overview is on its way out anyway: close it
                         // instead of leaving a half-dead panel on screen.
+                        if (app.popOutRequested)
+                            app.popOutRequested.connect(() => overviewScope.popOutMiniApp(
+                                ("expression" in app) ? app.expression : ""));
                         if (app.saved)
                             app.saved.connect(() => overviewScope.showLayoutSavedOsd());
                         if (app.applied)
