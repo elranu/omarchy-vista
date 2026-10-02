@@ -189,6 +189,43 @@ function appendCapture(content, text, date) {
     return `${existing}${bullet}\n`;
 }
 
+// The file name a rename asks for. A name typed with its .md extension is kept
+// as it was given, anything else is slugified like a new note's title, so a
+// rename can never produce a path or a dotfile.
+function renameTarget(input) {
+    const value = String(input ?? "").trim();
+    if (/\.md$/i.test(value)) {
+        const bare = value.replace(/\.md$/i, "");
+        const slug = slugify(bare);
+        return slug.length > 0 ? `${slug}.md` : "";
+    }
+    const slug = slugify(value);
+    return slug.length > 0 ? `${slug}.md` : "";
+}
+
+// Renaming onto a name that is taken would lose a note, so the new name gets a
+// numeric suffix until it is free. The note's own name is not a collision.
+function uniqueFileName(name, takenNames, currentName) {
+    const target = String(name ?? "");
+    if (target.length === 0)
+        return "";
+    const taken = {};
+    const list = Array.isArray(takenNames) ? takenNames : [];
+    for (var i = 0; i < list.length; ++i) {
+        if (list[i] !== currentName)
+            taken[list[i]] = true;
+    }
+    if (!taken[target])
+        return target;
+    const bare = target.replace(/\.md$/i, "");
+    for (var n = 2; n < 100; ++n) {
+        const candidate = `${bare}-${n}.md`;
+        if (!taken[candidate])
+            return candidate;
+    }
+    return "";
+}
+
 // A new note starts with its title as a heading, so the list shows the title
 // the user typed rather than the slug in the file name.
 function newNoteContent(title, date) {

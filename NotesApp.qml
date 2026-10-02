@@ -21,6 +21,9 @@ MiniApp {
     property string editorText: ""
     property string loadedText: ""
     property string query: ""
+    // The note was rewritten on disk while it was being edited here.
+    property bool externalChange: false
+    property bool renaming: false
     readonly property bool dirty: root.selectedName.length > 0 && root.editorText !== root.loadedText
     readonly property var visibleNotes:
         Notes.filterNotes(NotesStore.notes, root.query, NotesStore.contentMatches)
@@ -36,7 +39,8 @@ MiniApp {
         { key: "Ctrl ⏎", label: "Capture" },
         { key: "Ctrl S", label: "Save" },
         { key: "Ctrl N", label: "New" },
-        { key: "Ctrl F", label: "Search" }
+        { key: "Ctrl F", label: "Search" },
+        { key: "F2", label: "Rename" }
     ]
 
     signal captured(string message)
@@ -57,15 +61,43 @@ MiniApp {
         root.selectedName = name;
         root.loadedText = "";
         root.editorText = "";
+        root.externalChange = false;
+        root.renaming = false;
         noteFile.path = name.length > 0 ? NotesStore.pathFor(name) : "";
         noteFile.reload();
+        if (name.length > 0)
+            Qt.callLater(() => editor.forceActiveFocus());
     }
 
     function save() {
         if (!root.dirty)
             return;
-        if (NotesStore.save(root.selectedName, root.editorText))
+        if (NotesStore.save(root.selectedName, root.editorText)) {
             root.loadedText = root.editorText;
+            root.externalChange = false;
+        }
+    }
+
+    function startRename() {
+        if (root.selectedName.length === 0)
+            return;
+        root.renaming = true;
+        renameField.text = root.selectedName;
+        Qt.callLater(() => {
+            renameField.forceActiveFocus();
+            renameField.selectAll();
+        });
+    }
+
+    function commitRename() {
+        if (!root.renaming)
+            return;
+        root.renaming = false;
+        // The editor keeps the text it has; the file view is only repointed once
+        // the move has actually happened, in onRenamed below. Pointing it at the
+        // new name straight away raced the mv and emptied the editor.
+        NotesStore.rename(root.selectedName, renameField.text);
+        editor.forceActiveFocus();
     }
 
     function createNote() {
@@ -92,6 +124,11 @@ MiniApp {
             root.save();
             return true;
         }
+        if (event.key === Qt.Key_F2
+            || (event.key === Qt.Key_R && (event.modifiers & Qt.ControlModifier))) {
+            root.startRename();
+            return true;
+        }
         if (event.key === Qt.Key_Slash) {
             filterField.forceActiveFocus();
             return true;
@@ -113,21 +150,42 @@ MiniApp {
     // goes away, so closing never silently drops an edit.
     onCloseRequested: root.save()
 
+
+    Connections {
+        target: NotesStore
+
+        function onRenamed(from, to) {
+            if (from !== root.selectedName)
+                return;
+            root.selectedName = to;
+            noteFile.path = NotesStore.pathFor(to);
+        }
+    }
+
     FileView {
         id: noteFile
         printErrors: false
         watchChanges: true
         onLoaded: {
-            root.loadedText = noteFile.text();
-            // An edit in progress survives the note being rewritten elsewhere;
-            // the banner below says the file changed so nothing is lost silently.
-            if (!root.dirty)
-                root.editorText = root.loadedText;
+            // Whether an edit is in progress has to be read *before* loadedText
+            // is replaced: dirty compares the editor against the text last
+            // loaded, so updating it first made a freshly selected note look
+            // like an unsaved edit and the editor stayed empty.
+            const keepEdit = root.dirty;
+            const text = noteFile.text();
+            root.loadedText = text;
+            if (keepEdit)
+                root.externalChange = true;
+            else
+                root.editorText = text;
         }
         onFileChanged: noteFile.reload()
-        onLoadFailed: {
-            root.loadedText = "";
-            root.editorText = "";
+        // A read that fails leaves the editor alone: the note may simply have
+        // been moved a moment ago, and clearing would throw away text the user
+        // can still save. select() is what empties the editor.
+        onLoadFailed: error => {
+            if (error !== FileViewError.FileNotFound)
+                console.warn("[NotesApp] Could not read the note:", error);
         }
     }
 
@@ -340,6 +398,7 @@ MiniApp {
 
                     StyledText {
                         Layout.fillWidth: true
+                        visible: !root.renaming
                         text: root.selectedName.length > 0
                             ? `${root.selectedName}${root.dirty ? " ·  unsaved" : ""}`
                             : "Pick a note, or write one above"
@@ -348,11 +407,85 @@ MiniApp {
                         elide: Text.ElideRight
                     }
 
+                    // The name turns into a field in place, so renaming is the
+                    // same gesture as reading the name.
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 26
+                        visible: root.renaming
+                        radius: 6
+                        color: TuiStyle.surfaceSubtle
+                        border.width: 1
+                        border.color: TuiStyle.accent
+
+                        TextInput {
+                            id: renameField
+                            anchors.fill: parent
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            verticalAlignment: TextInput.AlignVCenter
+                            color: TuiStyle.fg
+                            font.pixelSize: 12
+                            selectByMouse: true
+                            onAccepted: root.commitRename()
+
+                            Keys.onPressed: event => {
+                                if (event.key === Qt.Key_Escape) {
+                                    root.renaming = false;
+                                    editor.forceActiveFocus();
+                                    event.accepted = true;
+                                }
+                            }
+                        }
+                    }
+
+                    NotesButton {
+                        label: root.renaming ? "Apply" : "Rename"
+                        enabled: root.selectedName.length > 0
+                        onActivated: root.renaming ? root.commitRename() : root.startRename()
+                    }
+
                     NotesButton {
                         label: "Save"
                         primary: true
                         enabled: root.dirty
                         onActivated: root.save()
+                    }
+                }
+
+                // The note changed on disk while it was open here. Saving would
+                // overwrite that version, so the choice is spelled out instead
+                // of being made silently.
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 30
+                    visible: root.externalChange
+                    radius: 6
+                    color: TuiStyle.surfaceRaised
+                    border.width: 1
+                    border.color: TuiStyle.accent
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 6
+                        spacing: 8
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: "This note changed on disk while you were editing it."
+                            color: TuiStyle.fg
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                        }
+
+                        NotesButton {
+                            label: "Reload"
+                            onActivated: {
+                                root.editorText = root.loadedText;
+                                root.externalChange = false;
+                            }
+                        }
                     }
                 }
 

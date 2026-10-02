@@ -10,6 +10,12 @@
   can be pointed at an existing vault. Captures are appended and never rewrite
   the note; the editor saves on Ctrl+S, writes atomically, and also saves when
   the panel closes. Only a plain file name inside the folder is ever written.
+- Notes can be renamed with `F2`, `Ctrl+R` or the Rename button. The new name is
+  slugified like a new note's title, a taken name gets a numeric suffix, and the
+  move is `mv -n`, so a rename can never overwrite another note. The note stays
+  open under its new name with whatever was typed.
+- A note that changes on disk while it is open in the editor says so above the
+  editor and offers to reload, instead of being overwritten by the next save.
 - New **Displays** mini app: every connected monitor as a tile drawn at its
   logical size, draggable to where the screen stands on the desk. Tiles snap to
   their neighbours' edges and centres, a tile dropped on another slides to the

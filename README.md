@@ -207,9 +207,20 @@ three parts:
   once the query is three characters long it also searches the contents of every
   note; notes that only matched on their contents rank below name matches.
   `Ctrl+F` or `/` jumps to the search box.
-- **The editor** on the right for the note that is selected. `Ctrl+S` or the Save
+- **The editor** on the right for the note that is selected. Clicking a note in
+  the list opens it and puts the cursor in the editor. `Ctrl+S` or the Save
   button writes it. Closing the panel saves first, so an edit is never dropped
-  silently, and the file is written atomically.
+  silently, and the file is written atomically. If the note changes on disk while
+  you have it open, a line above the editor says so and offers to reload, rather
+  than overwriting that version without telling you.
+
+**Renaming**: `F2`, `Ctrl+R`, or the Rename button turns the file name into a
+field. The new name is slugified the same way a new note's title is, so
+`Ideas de Producto` becomes `ideas-de-producto.md`; a name typed with `.md` is
+kept as given. A name that is already taken gets a numeric suffix
+(`ideas-2.md`), and the move is a `mv -n`, so renaming can never overwrite
+another note. The note stays open under its new name with whatever you had
+typed.
 
 `Ctrl+N` jumps to the title box for a new note; the title becomes the heading and
 a plain file name derived from it, for example `ideas-de-producto.md`.
