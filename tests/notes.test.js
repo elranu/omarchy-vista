@@ -8,7 +8,7 @@ vm.runInContext(fs.readFileSync(require.resolve('../Notes.js'), 'utf8'), context
 const {
     DEFAULT_DIRECTORY, expandPath, dateStamp, clockStamp, dailyName, slugify,
     fileNameFor, isSafeFileName, parseListing, titleFromName, titleFromContent,
-    snippet, filterNotes, appendCapture, newNoteContent
+    snippet, filterNotes, appendCapture, newNoteContent, renameTarget, uniqueFileName
 } = context;
 
 const AT = new Date(2026, 9, 2, 14, 32, 5);
@@ -112,4 +112,32 @@ test('an empty capture changes nothing', () => {
 test('a new note starts with its title as a heading', () => {
     assert.equal(newNoteContent('Ideas de producto', AT), '# Ideas de producto\n\n');
     assert.equal(newNoteContent('', AT), '# 2026-10-02 14:32\n\n');
+});
+
+test('a rename slugifies the new name and keeps a given .md', () => {
+    assert.equal(renameTarget('Ideas de Producto'), 'ideas-de-producto.md');
+    assert.equal(renameTarget('mis-notas.md'), 'mis-notas.md');
+    assert.equal(renameTarget('MIS NOTAS.MD'), 'mis-notas.md');
+    // A name that looks like a path becomes a file name in the folder.
+    assert.equal(renameTarget('../../etc/passwd'), 'etc-passwd.md');
+    assert.equal(renameTarget('   '), '');
+    assert.equal(renameTarget('.oculta'), 'oculta.md');
+});
+
+test('renaming onto a taken name gets a suffix instead of losing a note', () => {
+    const taken = ['ideas.md', 'ideas-2.md', 'otra.md'];
+    assert.equal(uniqueFileName('ideas.md', taken, 'otra.md'), 'ideas-3.md');
+    assert.equal(uniqueFileName('libre.md', taken, 'otra.md'), 'libre.md');
+    // Renaming a note to the name it already has is not a collision.
+    assert.equal(uniqueFileName('ideas.md', taken, 'ideas.md'), 'ideas.md');
+    assert.equal(uniqueFileName('', taken, 'otra.md'), '');
+});
+
+test('every name a rename can produce is safe to write', () => {
+    for (const input of ['../../etc/passwd', '.bashrc', 'a/b/c', 'nota con espacios',
+                         'Ünïcödé', 'mis-notas.md', 'x'.repeat(200)]) {
+        const target = renameTarget(input);
+        if (target.length > 0)
+            assert.equal(isSafeFileName(target), true, `${input} -> ${target}`);
+    }
 });

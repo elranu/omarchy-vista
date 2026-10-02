@@ -26,10 +26,15 @@ Singleton {
     // Paths whose contents matched the last content search.
     property var contentMatches: []
     property string contentQuery: ""
+    // The move in flight. `renamed` is only emitted once mv has finished, so
+    // nothing points a file view at a name that is not on disk yet.
+    property string renameFrom: ""
+    property string renameTo: ""
 
     signal captured(string fileName)
     signal saved(string fileName)
     signal created(string path)
+    signal renamed(string from, string to)
 
     function setDirectory(path) {
         const value = String(path ?? "").trim();
@@ -130,6 +135,26 @@ Singleton {
 
     // Content search, only for queries long enough to be worth reading every
     // file for. Names are filtered in Notes.filterNotes without touching disk.
+    // Renaming is `mv -n`: the name is slugified first, a taken name gets a
+    // numeric suffix, and -n means a note is never overwritten even if something
+    // else created that file between the check and the move.
+    function rename(fileName, input) {
+        const target = Notes.uniqueFileName(Notes.renameTarget(input),
+                                            root.notes.map(note => note.name),
+                                            fileName);
+        if (target.length === 0 || !Notes.isSafeFileName(fileName) || !Notes.isSafeFileName(target)) {
+            root.error = `Refused to rename ${fileName}`;
+            return "";
+        }
+        if (target === fileName)
+            return fileName;
+        root.renameFrom = fileName;
+        root.renameTo = target;
+        renameProcess.command = ["mv", "-n", "--", root.pathFor(fileName), root.pathFor(target)];
+        renameProcess.running = true;
+        return target;
+    }
+
     function searchContents(query) {
         const needle = String(query ?? "").trim();
         root.contentQuery = needle;
@@ -172,6 +197,18 @@ Singleton {
                 if (this.text.trim().length > 0)
                     root.error = this.text.trim();
             }
+        }
+    }
+
+    property Process renameProcess: Process {
+        onExited: exitCode => {
+            if (exitCode === 0)
+                root.renamed(root.renameFrom, root.renameTo);
+            else
+                root.error = `Could not rename ${root.renameFrom}`;
+            root.renameFrom = "";
+            root.renameTo = "";
+            root.refresh();
         }
     }
 

@@ -10,6 +10,12 @@
   can be pointed at an existing vault. Captures are appended and never rewrite
   the note; the editor saves on Ctrl+S, writes atomically, and also saves when
   the panel closes. Only a plain file name inside the folder is ever written.
+- Notes can be renamed with `F2`, `Ctrl+R` or the Rename button. The new name is
+  slugified like a new note's title, a taken name gets a numeric suffix, and the
+  move is `mv -n`, so a rename can never overwrite another note. The note stays
+  open under its new name with whatever was typed.
+- A note that changes on disk while it is open in the editor says so above the
+  editor and offers to reload, instead of being overwritten by the next save.
 - The Overview loads again with Quickshell 0.3.2: `NerdIcon` is registered in
   the module's `qmldir`. Newer Quickshell no longer resolves components that
   sit in the plugin folder without being listed there, so the Overview failed
