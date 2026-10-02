@@ -208,15 +208,16 @@ three parts:
   note; notes that only matched on their contents rank below name matches.
   `Ctrl+F` or `/` jumps to the search box.
 - **The editor** on the right for the note that is selected. Clicking a note in
-  the list opens it and puts the cursor in the editor. `Ctrl+S` or the Save
-  button writes it. Closing the panel saves first, so an edit is never dropped
+  the list opens it and puts the cursor in the editor. `Ctrl+S` or the save
+  button writes it. The toolbar buttons are icons; hovering one says what it
+  does. Closing the panel saves first, so an edit is never dropped
   silently, and the file is written atomically. If the note changes on disk while
   you have it open, a line above the editor says so and offers to reload, rather
   than overwriting that version without telling you.
 
 **Renaming**: right-click a note in the list for a small menu with **Open** and
-**Rename**, or use `F2`, `Ctrl+R`, or the Rename button. Either way the file name
-turns into a field. The new name is slugified the same way a new note's title is, so
+**Rename**, or press `F2` or `Ctrl+R` with the note open. Either way the file name
+turns into a field, with a ✓ button to apply it. The new name is slugified the same way a new note's title is, so
 `Ideas de Producto` becomes `ideas-de-producto.md`; a name typed with `.md` is
 kept as given. A name that is already taken gets a numeric suffix
 (`ideas-2.md`), and the move is a `mv -n`, so renaming can never overwrite

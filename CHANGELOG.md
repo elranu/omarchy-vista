@@ -10,11 +10,15 @@
   can be pointed at an existing vault. Captures are appended and never rewrite
   the note; the editor saves on Ctrl+S, writes atomically, and also saves when
   the panel closes. Only a plain file name inside the folder is ever written.
-- Notes can be renamed from a right-click menu on the note, or with `F2`,
-  `Ctrl+R` or the Rename button. The new name is
+- Notes can be renamed from a right-click menu on the note, or with `F2` or
+  `Ctrl+R`. The new name is
   slugified like a new note's title, a taken name gets a numeric suffix, and the
   move is `mv -n`, so a rename can never overwrite another note. The note stays
   open under its new name with whatever was typed.
+- The mini apps' toolbars are icon buttons with a tooltip for each one, shared
+  from the `MiniApp` frame, and the Displays and Notes title bars finally show
+  their own glyph: `NerdIcon` had no entry for them, so both were falling back
+  to the generic one.
 - A note that changes on disk while it is open in the editor says so above the
   editor and offers to reload, instead of being overwritten by the next save.
 - New **Displays** mini app: every connected monitor as a tile drawn at its
