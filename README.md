@@ -214,8 +214,9 @@ three parts:
   you have it open, a line above the editor says so and offers to reload, rather
   than overwriting that version without telling you.
 
-**Renaming**: `F2`, `Ctrl+R`, or the Rename button turns the file name into a
-field. The new name is slugified the same way a new note's title is, so
+**Renaming**: right-click a note in the list for a small menu with **Open** and
+**Rename**, or use `F2`, `Ctrl+R`, or the Rename button. Either way the file name
+turns into a field. The new name is slugified the same way a new note's title is, so
 `Ideas de Producto` becomes `ideas-de-producto.md`; a name typed with `.md` is
 kept as given. A name that is already taken gets a numeric suffix
 (`ideas-2.md`), and the move is a `mv -n`, so renaming can never overwrite

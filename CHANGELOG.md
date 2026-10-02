@@ -10,7 +10,8 @@
   can be pointed at an existing vault. Captures are appended and never rewrite
   the note; the editor saves on Ctrl+S, writes atomically, and also saves when
   the panel closes. Only a plain file name inside the folder is ever written.
-- Notes can be renamed with `F2`, `Ctrl+R` or the Rename button. The new name is
+- Notes can be renamed from a right-click menu on the note, or with `F2`,
+  `Ctrl+R` or the Rename button. The new name is
   slugified like a new note's title, a taken name gets a numeric suffix, and the
   move is `mv -n`, so a rename can never overwrite another note. The note stays
   open under its new name with whatever was typed.
