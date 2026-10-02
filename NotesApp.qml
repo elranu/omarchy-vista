@@ -220,7 +220,14 @@ MiniApp {
     Component.onCompleted: {
         // Makes the notes folder if it is not there yet, then lists it.
         NotesStore.prepare();
-        Qt.callLater(() => captureField.forceActiveFocus());
+    }
+
+    // Called by whoever hosts the app once it is on screen -- the Overview or a
+    // window -- so the cursor is in the capture box, ready to type, the moment
+    // Notes opens. Asking from Component.onCompleted lost the race: the
+    // Overview took the keyboard back right after.
+    function focusInitial() {
+        captureField.forceActiveFocus();
     }
 
     // Saving on the way out: closing the panel with unsaved text in the editor
