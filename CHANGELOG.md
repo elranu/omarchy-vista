@@ -1,7 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
+- New **Notes** mini app: a quick capture that appends a timestamped bullet to
+  the note for today, the list of notes newest first, filtering by name as you
+  type, a contents search once the query is three characters long, and an editor
+  for the selected note. Notes are Markdown files in one folder, `~/.Vista/Notes`
+  by default, created the first time the app is opened and configurable, so it
+  can be pointed at an existing vault. Captures are appended and never rewrite
+  the note; the editor saves on Ctrl+S, writes atomically, and also saves when
+  the panel closes. Only a plain file name inside the folder is ever written.
 - The Overview loads again with Quickshell 0.3.2: `NerdIcon` is registered in
   the module's `qmldir`. Newer Quickshell no longer resolves components that
   sit in the plugin folder without being listed there, so the Overview failed
