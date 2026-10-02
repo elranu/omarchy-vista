@@ -9,7 +9,7 @@ const {
     DEFAULT_DIRECTORY, expandPath, dateStamp, clockStamp, dailyName, slugify,
     fileNameFor, isSafeFileName, parseListing, titleFromName, titleFromContent,
     snippet, filterNotes, appendCapture, newNoteContent, renameTarget, uniqueFileName,
-    listingTotal, applyHeadings, LISTING_LIMIT
+    listingTotal, applyHeadings, LISTING_LIMIT, conflictName
 } = context;
 
 const AT = new Date(2026, 9, 2, 14, 32, 5);
@@ -177,4 +177,19 @@ test('every name a rename can produce is safe to write', () => {
         if (target.length > 0)
             assert.equal(isSafeFileName(target), true, `${input} -> ${target}`);
     }
+});
+
+test('a conflict copy sits beside the note and is a safe name', () => {
+    assert.equal(conflictName('ideas.md', AT), 'ideas (conflict 2026-10-02 1432).md');
+    assert.equal(conflictName('Reunión (borrador).md', AT), 'Reunión (borrador) (conflict 2026-10-02 1432).md');
+    assert.equal(isSafeFileName(conflictName('ideas.md', AT)), true);
+    assert.notEqual(conflictName('ideas.md', AT), 'ideas.md');
+});
+
+test('a heading far down the note still becomes its title', () => {
+    const notes = parseListing('300\t/n/largo.md', '/n');
+    // The headings pass reports the first heading wherever it is; the title
+    // logic must not care which line it came from.
+    assert.equal(applyHeadings(notes, '/n/largo.md\t## Visto en la línea 40', '/n')[0].title,
+                 'Visto en la línea 40');
 });

@@ -23,6 +23,8 @@
   to the generic one.
 - A note that changes on disk while it is open in the editor says so above the
   editor and offers to reload, instead of being overwritten by the next save.
+  Closing the panel in that state keeps the edit as a conflict copy beside the
+  note rather than overwriting the newer version.
 - The Overview loads again with Quickshell 0.3.2: `NerdIcon` is registered in
   the module's `qmldir`. Newer Quickshell no longer resolves components that
   sit in the plugin folder without being listed there, so the Overview failed

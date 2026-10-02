@@ -281,6 +281,15 @@ function uniqueFileName(name, takenNames, currentName) {
     return "";
 }
 
+// Where an edit goes when the note changed on disk underneath it and the panel
+// is closed: next to the note, never over it, so both versions survive and the
+// user picks one later.
+function conflictName(name, date) {
+    const bare = String(name ?? "").replace(/\.md$/i, "");
+    const when = asDate(date);
+    return `${bare} (conflict ${dateStamp(when)} ${two(when.getHours())}${two(when.getMinutes())}).md`;
+}
+
 // A new note starts with its title as a heading, so the list shows the title
 // the user typed rather than the slug in the file name.
 function newNoteContent(title, date) {

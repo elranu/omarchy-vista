@@ -32,13 +32,21 @@ Singleton {
     // Paths whose contents matched the last content search.
     property var contentMatches: []
     property string contentQuery: ""
-    // The move in flight. `renamed` is only emitted once mv has finished, so
-    // nothing points a file view at a name that is not on disk yet.
-    property string renameFrom: ""
-    property string renameTo: ""
 
     // Set by the file view when a write fails, read right after waitForJob.
     property bool writeFailed: false
+
+    // Every refusal and failure goes through here, so the panel can show it:
+    // a failed write that only sets a property nobody reads is the same as a
+    // silent one.
+    function fail(message) {
+        root.error = String(message ?? "");
+        console.warn("[NotesStore]", root.error);
+    }
+
+    function clearError() {
+        root.error = "";
+    }
 
     // Writes a note and confirms it. The read-back is the only honest check
     // that the bytes reached the disk before this view is repointed, and the
@@ -52,8 +60,10 @@ Singleton {
             writeFile.path = path;
             writeFile.setText(String(content ?? ""));
             writeFile.waitForJob();
-            if (!root.writeFailed && root.exists(name))
+            if (!root.writeFailed && root.exists(name)) {
+                root.clearError();
                 return true;
+            }
         }
         return false;
     }
@@ -69,8 +79,15 @@ Singleton {
             return;
         root.directory = value;
         root.notes = [];
+        root.noteTotal = 0;
+        // Matches from the old folder are paths that no longer exist here.
+        root.contentMatches = [];
         root.persist();
-        root.refresh();
+        // prepare(), not refresh(): the app is open, and a folder that does
+        // not exist yet has to be made before the first capture lands in it.
+        root.prepare();
+        if (root.contentQuery.length > 0)
+            root.searchContents(root.contentQuery);
     }
 
     // Listing never creates anything: someone who never opens Notes should not
@@ -118,7 +135,7 @@ Singleton {
         headingProcess.running = false;
         headingProcess.command = ["bash", "-c",
             `find ${root.quoted(root.resolvedDirectory)} -maxdepth 1 -type f -name '*.md' -print0 `
-            + `| xargs -0 -r awk 'FNR <= 20 && /^#+[ \\t]/ { print FILENAME "\\t" $0; nextfile }'`];
+            + `| xargs -0 -r awk '/^#+[ \\t]/ { print FILENAME "\\t" $0; nextfile }'`];
         headingProcess.running = true;
     }
 
@@ -176,7 +193,7 @@ Singleton {
         writeFile.waitForJob();
         const existing = writeFile.loaded ? writeFile.text() : "";
         if (!root.writeNow(root.pathFor(name), Notes.appendCapture(existing, body, now))) {
-            root.error = `Could not write ${name}`;
+            root.fail(`Could not write ${name}`);
             return false;
         }
         root.captured(name);
@@ -186,16 +203,32 @@ Singleton {
 
     function save(fileName, content) {
         if (!Notes.isSafeFileName(fileName)) {
-            root.error = `Refused to write ${fileName}`;
+            root.fail(`Refused to write ${fileName}`);
             return false;
         }
         if (!root.writeNow(root.pathFor(fileName), content)) {
-            root.error = `Could not write ${fileName}`;
+            root.fail(`Could not write ${fileName}`);
             return false;
         }
         root.saved(fileName);
         root.refresh();
         return true;
+    }
+
+    // Keeps an edit whose note changed on disk while it was open, without
+    // touching the note itself.
+    function saveConflictCopy(fileName, content) {
+        const name = root.freeName(Notes.conflictName(fileName, new Date()));
+        if (name.length === 0 || !Notes.isSafeFileName(name)) {
+            root.fail(`Could not keep a copy of ${fileName}`);
+            return "";
+        }
+        if (!root.writeNow(root.pathFor(name), content)) {
+            root.fail(`Could not keep a copy of ${fileName}`);
+            return "";
+        }
+        root.refresh();
+        return name;
     }
 
     function create(title) {
@@ -204,11 +237,11 @@ Singleton {
         // otherwise write straight over the first one.
         const name = root.freeName(Notes.fileNameFor(title, now));
         if (name.length === 0 || !Notes.isSafeFileName(name)) {
-            root.error = `Refused to create ${name}`;
+            root.fail(`Refused to create ${name}`);
             return "";
         }
         if (!root.writeNow(root.pathFor(name), Notes.newNoteContent(title, now))) {
-            root.error = `Could not create ${name}`;
+            root.fail(`Could not create ${name}`);
             return "";
         }
         root.created(name);
@@ -218,22 +251,37 @@ Singleton {
 
     // Content search, only for queries long enough to be worth reading every
     // file for. Names are filtered in Notes.filterNotes without touching disk.
-    // Renaming is `mv -n`: the name is slugified first, a taken name gets a
-    // numeric suffix, and -n means a note is never overwritten even if something
-    // else created that file between the check and the move.
+    // Renaming copies the note to its new name and only then removes the old
+    // file. The copy is a synchronous, read-back-confirmed write, so by the time
+    // this returns the note exists under its new name and nothing can still
+    // point at the old one: an asynchronous `mv` left a window in which a quick
+    // Ctrl+S, a note switch or closing the panel wrote the old name again,
+    // leaving both files behind. Only the removal is asynchronous, and it runs
+    // after the copy is known to be on disk.
+    //
+    // The new name is slugified like a new note's title and moved off any name
+    // that is taken, so a rename can never overwrite another note.
     function rename(fileName, input) {
         const wanted = Notes.renameTarget(input);
-        const target = wanted === fileName ? fileName : root.freeName(wanted);
+        if (wanted === fileName)
+            return fileName;
+        const target = root.freeName(wanted);
         if (target.length === 0 || !Notes.isSafeFileName(fileName) || !Notes.isSafeFileName(target)) {
-            root.error = `Refused to rename ${fileName}`;
+            root.fail(`Refused to rename ${fileName}`);
             return "";
         }
-        if (target === fileName)
-            return fileName;
-        root.renameFrom = fileName;
-        root.renameTo = target;
-        renameProcess.command = ["mv", "-n", "--", root.pathFor(fileName), root.pathFor(target)];
-        renameProcess.running = true;
+        if (!root.exists(fileName)) {
+            root.fail(`${fileName} is no longer on disk`);
+            return "";
+        }
+        const content = readFile.text();
+        if (!root.writeNow(root.pathFor(target), content)) {
+            root.fail(`Could not rename ${fileName}`);
+            return "";
+        }
+        removeProcess.command = ["rm", "-f", "--", root.pathFor(fileName)];
+        removeProcess.running = true;
+        root.renamed(fileName, target);
         return target;
     }
 
@@ -284,7 +332,7 @@ Singleton {
         stderr: StdioCollector {
             onStreamFinished: {
                 if (this.text.trim().length > 0)
-                    root.error = this.text.trim();
+                    root.fail(this.text.trim());
             }
         }
     }
@@ -297,16 +345,8 @@ Singleton {
         }
     }
 
-    property Process renameProcess: Process {
-        onExited: exitCode => {
-            if (exitCode === 0)
-                root.renamed(root.renameFrom, root.renameTo);
-            else
-                root.error = `Could not rename ${root.renameFrom}`;
-            root.renameFrom = "";
-            root.renameTo = "";
-            root.refresh();
-        }
+    property Process removeProcess: Process {
+        onExited: root.refresh()
     }
 
     property Process grepProcess: Process {
