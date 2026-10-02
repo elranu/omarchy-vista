@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.5
 
 - The icon file index only covers the icons the desktop entries actually
   declare, filtered by `grep` before anything reaches QML: 374 paths here
