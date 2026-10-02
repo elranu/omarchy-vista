@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+- New **Displays** mini app: every connected monitor as a tile drawn at its
+  logical size, draggable to where the screen stands on the desk. Tiles snap to
+  their neighbours' edges and centres, a tile dropped on another slides to the
+  nearest free side, a tile dropped in empty space is pulled back against the
+  others, and the layout is normalised to `0x0`, so there are no overlapping
+  screens and no gaps the pointer gets stuck in. Arrow keys or `h j k l` move
+  the selected screen, and pressing the same key again slides it along that side.
+- Applying only sets positions: each monitor's mode, scale and transform are
+  echoed back exactly as `hyprctl monitors` reports them, so a rotated screen
+  keeps its orientation. It is a single `hyprctl eval` call with one
+  `hl.monitor` rule per screen, so Hyprland never sees an intermediate
+  overlapping layout. `hyprctl keyword` is not usable here: Omarchy 4 configures
+  Hyprland through the Lua parser and keyword refuses to run against it.
+- A layout can be saved for the exact set of connected screens, in Vista's own
+  state file (`display-layouts.json`), and is put back when those same screens
+  appear again. Nothing is written to the Hyprland configuration, and a set of
+  screens with no saved layout is left to `monitors.lua`. The new gear-panel
+  toggle **Restore saved display layouts** turns the restoring off.
+- A mini app can be handed to a real window with `Ctrl+Enter` or the **Window**
+  keycap in its title bar: an xdg toplevel Hyprland puts on the current
+  workspace, tiles, and reaches with `Super`+number. The window is owned by the
+  always-loaded service, so it outlives the Overview that opened it, and what
+  was typed comes along. Its class is the shell's own `org.quickshell`, since
+  Quickshell's app id belongs to the process, so window rules match the title
+  `<App> — Vista`.
+- Mini apps open as a window rather than a small box: the panel takes a share of
+  the Overview, with each app's own size as the floor, so the Displays canvas and
+  the calculator both get the room they need on a large screen.
+
 ## 0.2.5
 
 - The icon file index only covers the icons the desktop entries actually

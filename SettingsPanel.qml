@@ -52,11 +52,17 @@ Panel {
         root.persistSetting("vimKeys", enabled);
     }
 
+    function persistRestoreDisplayLayouts(enabled) {
+        GlobalStates.restoreDisplayLayouts = enabled;
+        root.persistSetting("restoreDisplayLayouts", enabled);
+    }
+
     function syncSettings() {
         const mode = root.setting("sortMode", "legacy") === "legacy" ? "legacy" : "system";
         GlobalStates.overviewSortMode = mode;
         GlobalStates.overviewPerMonitor = root.setting("perMonitor", true) !== false;
         GlobalStates.overviewVimKeys = root.setting("vimKeys", true) !== false;
+        GlobalStates.restoreDisplayLayouts = root.setting("restoreDisplayLayouts", true) !== false;
     }
 
     Component.onCompleted: {
@@ -219,6 +225,35 @@ Panel {
                                 : "Any letter opens search."
                             checked: GlobalStates.overviewVimKeys
                             onToggled: root.persistVimKeys(!GlobalStates.overviewVimKeys)
+                        }
+
+                        Rectangle {
+                            width: menuColumn.width
+                            height: 1
+                            color: Util.alpha(Color.popups.text, 0.12)
+                        }
+
+                        Text {
+                            text: "Displays"
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                            color: root.panelForeground
+                            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                            font.pixelSize: Style.font.title
+                            font.bold: true
+                        }
+
+                        // Always shown, whatever is plugged in right now: the
+                        // restore fires the moment a saved screen reappears, so
+                        // it has to be possible to turn off beforehand.
+                        ToggleRow {
+                            width: menuColumn.width
+                            title: "Restore saved display layouts"
+                            detail: GlobalStates.restoreDisplayLayouts
+                                ? "A layout saved in Displays comes back when those same screens are connected."
+                                : "Saved layouts are kept but never applied on their own."
+                            checked: GlobalStates.restoreDisplayLayouts
+                            onToggled: root.persistRestoreDisplayLayouts(!GlobalStates.restoreDisplayLayouts)
                         }
 
                         Rectangle {

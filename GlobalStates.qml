@@ -34,6 +34,8 @@ Singleton {
     // the vim idiom. When false any printable character opens search, which is
     // quicker but takes those keys away from navigation.
     property bool overviewVimKeys: true
+    // Put a saved monitor layout back when those same screens reappear.
+    property bool restoreDisplayLayouts: true
     // Each overlay draws only its own monitor's workspaces. Persisted to the bar
     // widget entry in shell.json, the same way overviewSortMode is.
     property bool overviewPerMonitor: true

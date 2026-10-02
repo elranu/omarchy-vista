@@ -18,21 +18,46 @@ Item {
     property string title: ""
     property string subtitle: ""
     property string icon: "apps"
+    // A mini app is a window, not a tooltip: it takes a share of the Overview
+    // and only falls back to its own preferred size on a screen too small for
+    // that share. contentWidth/contentHeight are the floor, the shares are what
+    // the panel grows to, and the margins keep the workspace grid visible
+    // around it.
     property real contentWidth: 620
     property real contentHeight: 460
+    property real widthShare: 0.62
+    property real heightShare: 0.74
+    readonly property real sideMargin: 48
+    readonly property real verticalMargin: 72
+    readonly property real panelWidth:
+        Math.min(Math.max(root.contentWidth, root.width * root.widthShare),
+                 root.width - 2 * root.sideMargin)
+    readonly property real panelHeight:
+        Math.min(Math.max(root.contentHeight, root.height * root.heightShare),
+                 root.height - 2 * root.verticalMargin)
     // Pairs of { key, label } drawn as keycaps along the bottom.
     property var hints: []
+    // Set when the same app is hosted in a real window instead of over the
+    // workspace grid: the frame then fills the window, with no backdrop to dim
+    // and no panel border, because Hyprland draws the window's own.
+    property bool windowed: false
 
     default property alias content: contentArea.data
 
     signal closeRequested()
+    // Asked for from the title bar or with Ctrl+Enter: the same app, in a window
+    // Hyprland puts on a workspace.
+    signal popOutRequested()
 
     anchors.fill: parent
 
-    // Darkens the grid behind the panel and swallows clicks that miss it.
+    // Darkens the grid behind the panel and swallows clicks that miss it. In a
+    // window there is nothing behind to dim.
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
+        visible: !root.windowed
+        enabled: !root.windowed
         onClicked: root.closeRequested()
 
         Rectangle {
@@ -45,11 +70,11 @@ Item {
     Rectangle {
         id: panel
         anchors.centerIn: parent
-        width: Math.min(root.contentWidth, root.width - 80)
-        height: Math.min(root.contentHeight, root.height - 120)
-        radius: 10
+        width: root.windowed ? root.width : root.panelWidth
+        height: root.windowed ? root.height : root.panelHeight
+        radius: root.windowed ? 0 : 10
         color: TuiStyle.bg
-        border.width: 1
+        border.width: root.windowed ? 0 : 1
         border.color: TuiStyle.accent
 
         // Clicks inside the panel must not reach the backdrop above.
@@ -102,6 +127,13 @@ Item {
                         font.pixelSize: 12
                         elide: Text.ElideRight
                     }
+                }
+
+                MiniAppKeycap {
+                    visible: !root.windowed
+                    keyLabel: "Ctrl ⏎"
+                    label: "Window"
+                    onActivated: root.popOutRequested()
                 }
 
                 MiniAppKeycap {

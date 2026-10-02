@@ -1,3 +1,5 @@
+import "."
+
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
@@ -8,6 +10,15 @@ Item {
 
     // Injected by Omarchy's service loader.
     property var shell: null
+    // A QML singleton is only created once something refers to it, and the
+    // Displays mini app is loaded on demand. Referring to it from this
+    // always-loaded service is what keeps the saved-layout watcher alive, so a
+    // layout saved for these screens is put back when they reappear even if the
+    // panel is never opened.
+    readonly property var displayLayouts: DisplayLayouts
+    // Same reason: a mini app popped out into a window must survive the Overview
+    // closing, and the singleton that owns those windows is created on demand.
+    readonly property var miniAppWindows: MiniAppWindows
     property string appliedMode: ""
     property bool restoring: false
 
