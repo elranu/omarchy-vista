@@ -38,6 +38,9 @@ See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
   Win+number, Win+Tab, and Win+Shift+Tab.
 - Search for applications, open windows, and Omarchy menu actions from Overview,
   with a built-in calculator.
+- Take notes without leaving the keyboard: the **Notes** mini app captures a
+  timestamped line into the note for today, and lists, searches and edits every
+  note in its folder.
 - Arrange your monitors: the **Displays** mini app draws every screen at its
   logical size and lets you drag them to where they stand on your desk. A layout
   can be saved for that exact set of screens, in Vista's own state file.
@@ -190,6 +193,36 @@ closes it and leaves the Overview open.
 
 Adding one is a QML file based on `MiniApp.qml` plus an entry in `MiniApps.js`.
 
+### Notes
+
+Search for `notes` (also `nota`, `notas`, `diario`) and press Enter. The panel has
+three parts:
+
+- **Quick capture** at the top. Whatever you type goes to the note for today,
+  named after the date, as one bullet with the time in front of it:
+  `- 14:32 call the accountant`. `Ctrl+Enter` files it. A capture is **appended**,
+  so it can never overwrite what is already in the note, and a multi-line capture
+  stays a single bullet with its extra lines indented.
+- **The list** on the left, newest first. Typing filters by name as you type, and
+  once the query is three characters long it also searches the contents of every
+  note; notes that only matched on their contents rank below name matches.
+  `Ctrl+F` or `/` jumps to the search box.
+- **The editor** on the right for the note that is selected. `Ctrl+S` or the Save
+  button writes it. Closing the panel saves first, so an edit is never dropped
+  silently, and the file is written atomically.
+
+`Ctrl+N` jumps to the title box for a new note; the title becomes the heading and
+a plain file name derived from it, for example `ideas-de-producto.md`.
+
+Notes are Markdown files in one folder, `~/.Vista/Notes` by default. The folder is
+created the first time you open the app, never before, and the path is remembered
+in `notes.json` in Vista's state directory — point it at an Obsidian vault or any
+other folder of Markdown files and the app works there. Only a plain file name
+inside that folder is ever written: a title that looks like a path, such as
+`../../etc/passwd`, becomes `etc-passwd.md`.
+
+The app does not delete notes.
+
 #### Open as a window
 
 `Ctrl+Enter`, or the **Window** keycap in the mini app's title bar, hands the
@@ -290,6 +323,9 @@ omarchy plugin list --json | jq '.[] | select(.id == "ranu.panorama")'
 - `Displays.js` — monitor layout geometry: logical sizes, snapping, overlap and gap repair.
 - `DisplaysApp.qml` — the Displays mini app: canvas, drag, apply and save.
 - `DisplayLayouts.qml` — saved layouts per set of screens, and restoring them.
+- `Notes.js` — note naming, listing, filtering and the shape of a capture.
+- `NotesApp.qml` — the Notes mini app: capture, list, search and editor.
+- `NotesStore.qml` — the notes folder on disk, and the remembered path.
 - `MiniApp.qml` — the shared mini app frame, over the grid or filling a window.
 - `MiniAppWindow.qml` — a mini app hosted in a real Hyprland window.
 - `MiniAppWindows.qml` — owns those windows, so they outlive the Overview.
