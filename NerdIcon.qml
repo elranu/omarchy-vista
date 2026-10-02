@@ -16,6 +16,18 @@ Text {
         case "search": return "\uF002";              // fa-search
         case "menu": return "\uF0C9";                // fa-bars
         case "calculator": return "\uF1EC";          // fa-calculator
+        case "monitor": return "\uF108";            // fa-desktop
+        case "note": return "\uF0F6";               // fa-file-text-o
+        case "save": return "\uF0C7";               // fa-floppy-o
+        case "capture": return "\uF1D8";            // fa-paper-plane
+        case "refresh": return "\uF021";            // fa-refresh
+        case "undo": return "\uF0E2";               // fa-undo
+        case "apply": return "\uF00C";              // fa-check
+        case "forget": return "\uF014";             // fa-trash-o
+        case "rename": return "\uF040";             // fa-pencil
+        case "open": return "\uF07C";               // fa-folder-open
+        case "copy": return "\uF0C5";               // fa-files-o
+        case "window": return "\uF2D0";             // fa-window-maximize
         default: return "\uF00A";                     // fa-th-large
         }
     }

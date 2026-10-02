@@ -253,8 +253,9 @@ MiniApp {
                     }
                 }
 
-                NotesButton {
-                    label: "Capture"
+                MiniApp.IconButton {
+                    icon: "capture"
+                    tooltip: "File under today (Ctrl+Enter)"
                     primary: true
                     enabled: captureField.text.trim().length > 0
                     onActivated: root.capture()
@@ -408,8 +409,9 @@ MiniApp {
                         }
                     }
 
-                    NotesButton {
-                        label: "New"
+                    MiniApp.IconButton {
+                        icon: "add"
+                        tooltip: "New note (Ctrl+N)"
                         onActivated: root.createNote()
                     }
                 }
@@ -488,14 +490,16 @@ MiniApp {
                         }
                     }
 
-                    NotesButton {
-                        label: root.renaming ? "Apply" : "Rename"
-                        enabled: root.selectedName.length > 0
-                        onActivated: root.renaming ? root.commitRename() : root.startRename()
+                    MiniApp.IconButton {
+                        icon: "apply"
+                        visible: root.renaming
+                        tooltip: "Apply the new name (Enter)"
+                        onActivated: root.commitRename()
                     }
 
-                    NotesButton {
-                        label: "Save"
+                    MiniApp.IconButton {
+                        icon: "save"
+                        tooltip: "Save the note (Ctrl+S)"
                         primary: true
                         enabled: root.dirty
                         onActivated: root.save()
@@ -528,8 +532,9 @@ MiniApp {
                             elide: Text.ElideRight
                         }
 
-                        NotesButton {
-                            label: "Reload"
+                        MiniApp.IconButton {
+                            icon: "refresh"
+                            tooltip: "Take the version from disk"
                             onActivated: {
                                 root.editorText = root.loadedText;
                                 root.externalChange = false;
@@ -612,6 +617,7 @@ MiniApp {
             spacing: 2
 
             MenuRow {
+                icon: "open"
                 label: "Open"
                 onActivated: {
                     root.select(root.menuName);
@@ -620,6 +626,7 @@ MiniApp {
             }
 
             MenuRow {
+                icon: "rename"
                 label: "Rename"
                 keyHint: "F2"
                 onActivated: {
@@ -635,6 +642,7 @@ MiniApp {
     component MenuRow: Rectangle {
         id: menuRow
 
+        property string icon: "apps"
         property string label: ""
         property string keyHint: ""
 
@@ -649,7 +657,13 @@ MiniApp {
             anchors.fill: parent
             anchors.leftMargin: 9
             anchors.rightMargin: 9
-            spacing: 6
+            spacing: 8
+
+            NerdIcon {
+                symbol: menuRow.icon
+                iconSize: 12
+                color: TuiStyle.dim
+            }
 
             StyledText {
                 Layout.fillWidth: true
@@ -675,37 +689,4 @@ MiniApp {
         }
     }
 
-    component NotesButton: Rectangle {
-        id: button
-
-        property string label: ""
-        property bool primary: false
-
-        signal activated()
-
-        implicitWidth: buttonLabel.implicitWidth + 22
-        implicitHeight: 30
-        radius: 6
-        color: !button.enabled ? "transparent"
-            : (buttonMouse.containsMouse ? TuiStyle.surfaceHover : TuiStyle.surfaceRaised)
-        border.width: 1
-        border.color: button.primary && button.enabled ? TuiStyle.accent : TuiStyle.inactiveBorder
-        opacity: button.enabled ? 1 : 0.45
-
-        StyledText {
-            id: buttonLabel
-            anchors.centerIn: parent
-            text: button.label
-            color: button.primary && button.enabled ? TuiStyle.accent : TuiStyle.fg
-            font.pixelSize: 12
-        }
-
-        MouseArea {
-            id: buttonMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.activated()
-        }
-    }
 }

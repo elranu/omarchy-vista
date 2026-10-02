@@ -327,27 +327,32 @@ MiniApp {
                 }
             }
 
-            DisplaysButton {
-                label: "Undo"
+            MiniApp.IconButton {
+                icon: "undo"
+                tooltip: "Undo unapplied changes (u)"
                 enabled: root.dirty
                 onActivated: root.undo()
             }
-            DisplaysButton {
-                label: "Reload"
+            MiniApp.IconButton {
+                icon: "refresh"
+                tooltip: "Reload the Hyprland config (r)"
                 onActivated: root.revert()
             }
-            DisplaysButton {
-                label: "Forget"
+            MiniApp.IconButton {
+                icon: "forget"
+                tooltip: "Forget the layout saved for these screens"
                 visible: root.hasSavedLayout
                 onActivated: root.forget()
             }
-            DisplaysButton {
-                label: "Apply"
+            MiniApp.IconButton {
+                icon: "apply"
+                tooltip: "Apply to this session (Enter)"
                 enabled: root.dirty
                 onActivated: root.apply()
             }
-            DisplaysButton {
-                label: "Save"
+            MiniApp.IconButton {
+                icon: "save"
+                tooltip: "Save for these screens and apply (s)"
                 primary: true
                 enabled: root.tileCount > 1
                 onActivated: root.save()
@@ -355,39 +360,4 @@ MiniApp {
         }
     }
 
-    component DisplaysButton: Rectangle {
-        id: button
-
-        property string label: ""
-        property bool primary: false
-
-        signal activated()
-
-        implicitWidth: buttonLabel.implicitWidth + 26
-        implicitHeight: 32
-        radius: 6
-        color: !button.enabled ? "transparent"
-            : (buttonMouse.containsMouse ? TuiStyle.surfaceHover : TuiStyle.surfaceRaised)
-        border.width: 1
-        border.color: button.enabled
-            ? (button.primary ? TuiStyle.accent : TuiStyle.inactiveBorder)
-            : TuiStyle.inactiveBorder
-        opacity: button.enabled ? 1 : 0.45
-
-        StyledText {
-            id: buttonLabel
-            anchors.centerIn: parent
-            text: button.label
-            color: button.primary && button.enabled ? TuiStyle.accent : TuiStyle.fg
-            font.pixelSize: 12
-        }
-
-        MouseArea {
-            id: buttonMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.activated()
-        }
-    }
 }
