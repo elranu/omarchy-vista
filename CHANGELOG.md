@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Lost windows can be brought back from the Overview. A window Hyprland reports
+  on one monitor while its geometry sits on another -- seen after a hotplug, and
+  with a Google Meet window opened from a browser on the other screen -- was
+  invisible on its own workspace. The Overview still drew it, clamped into its
+  card; it now carries a **Bring here** badge that moves it to the workspace
+  being looked at and focuses it. Detection is the centre of the window outside
+  its monitor, skipping hidden windows and special workspaces, and nothing moves
+  unless the badge is clicked.
 - New **Displays** mini app: every connected monitor as a tile drawn at its
   logical size, draggable to where the screen stands on the desk. Tiles snap to
   their neighbours' edges and centres, a tile dropped on another slides to the

@@ -9,6 +9,7 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import "ColorUtils.js" as ColorUtils
 import "WheelUtils.js" as WheelUtils
+import "LostWindows.js" as LostWindows
 
 Item {
     id: root
@@ -406,6 +407,19 @@ Item {
     }
 
     property color activeBorderColor: TuiStyle.controlActiveBorder
+
+    // Brings a lost window to the workspace being looked at and closes the
+    // Overview so it is in front of the user. Moving it to a workspace is what
+    // makes Hyprland lay it out on the right monitor again.
+    function rescueWindow(windowData, workspaceId) {
+        const target = WorkspaceNavigation.currentWorkspaceId();
+        const commands = LostWindows.rescueCommands(windowData?.address, workspaceId, target);
+        if (commands.length === 0)
+            return;
+        for (const command of commands)
+            Hyprland.dispatch(command);
+        GlobalStates.overviewOpen = false;
+    }
 
     property Component windowComponent: OverviewWindow {}
     property var hoveredWindowData: null
@@ -945,6 +959,7 @@ Item {
                     }
 
                     readonly property int liveWorkspaceId: root.effectiveWorkspaceId(window.windowData, address)
+                    onRescueRequested: root.rescueWindow(window.windowData, window.liveWorkspaceId)
                     property int stickyWorkspaceIndex: -1
                     readonly property int resolvedWorkspaceIndex: root.indexForWorkspaceId(liveWorkspaceId)
                     property int workspaceEntryIndex: resolvedWorkspaceIndex >= 0

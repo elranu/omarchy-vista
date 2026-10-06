@@ -49,6 +49,9 @@ See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
 - No generic fallback icon is drawn over a window thumbnail when an app has no icon.
 - Window icons come from the desktop entries, so applications whose window class
   differs from their icon name still show their own icon.
+- Finds lost windows: a window Hyprland reports on one monitor while its geometry
+  sits on another gets a **Bring here** badge in the Overview, which moves it to
+  the workspace you are looking at.
 
 ## Requirements
 
@@ -258,6 +261,25 @@ Display panel owns those.
 The search index reads Omarchy's menu through `$OMARCHY_PATH`, so it does not
 assume `/usr/share/omarchy` and can be used on NixOS installations.
 
+## Lost windows
+
+Sometimes Hyprland reports a window on one monitor while its geometry sits on
+another — after plugging or unplugging a screen, or when a popup opens from a
+window on the other monitor. Switching to that window's workspace does not show
+it, because it is drawn off that workspace's monitor.
+
+The Overview still draws such a window, clamped into its workspace card, and
+marks it with a **Bring here** badge. Clicking the badge moves the window to the
+workspace you are looking at and focuses it; moving it to a workspace is what
+makes Hyprland lay it out on the right monitor again. A window that is lost on
+the very workspace you are looking at takes a hop through a temporary special
+workspace and back, since moving it onto its own workspace would do nothing.
+
+A window counts as lost when the centre of its geometry is outside its monitor,
+so one that only hangs over an edge is left alone. Hidden windows and special
+workspaces such as the scratchpad are never reported, and nothing is moved
+unless you click the badge.
+
 ## Keyboard integration and cleanup
 
 The enabled plugin service registers standalone Win, Win+Tab, Win+Shift+Tab, optimized Win+number slots, and Super-interrupt guards for normal application shortcuts.
@@ -286,6 +308,7 @@ omarchy plugin list --json | jq '.[] | select(.id == "ranu.panorama")'
 - `OverviewSwitchingController.qml` — Win+Tab switching and commit behavior.
 - `WorkspaceOrder.qml` — persistent optimized workspace ordering.
 - `HyprlandData.qml` — workspace, monitor, and window state mapping.
+- `LostWindows.js` — which windows are off their monitor, and how to bring one back.
 - `SettingsPanel.qml` — ordering-mode settings panel.
 - `Displays.js` — monitor layout geometry: logical sizes, snapping, overlap and gap repair.
 - `DisplaysApp.qml` — the Displays mini app: canvas, drag, apply and save.

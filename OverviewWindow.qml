@@ -7,11 +7,17 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import "ColorUtils.js" as ColorUtils
+import "LostWindows.js" as LostWindows
 
 Item { // Window
     id: root
     property var toplevel
     property var windowData
+    // Drawn here, clamped into its workspace card, but placed off its own
+    // monitor, so switching to its workspace would not show it. See
+    // LostWindows.js.
+    readonly property bool lost: LostWindows.isLost(root.windowData, root.monitorData)
+    signal rescueRequested()
     property bool captureActive: true
     property var monitorData
     property var scale
@@ -388,6 +394,55 @@ Item { // Window
             symbol: "apps"
             iconSize: Math.max(16, parent.height * 0.45)
             color: TuiStyle.fg
+        }
+    }
+
+    // The way back for a lost window: a badge over its thumbnail that brings it
+    // to the workspace being looked at. It sits above the thumbnail's own click
+    // area, so clicking it rescues instead of focusing a window that would stay
+    // off screen.
+    Rectangle {
+        id: lostBadge
+        visible: root.lost
+        z: 100
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 6
+        width: lostRow.implicitWidth + 14
+        height: 24
+        radius: 12
+        color: lostMouse.containsMouse ? TuiStyle.accent : TuiStyle.bg
+        border.width: 1
+        border.color: TuiStyle.accent
+
+        Row {
+            id: lostRow
+            anchors.centerIn: parent
+            spacing: 5
+
+            NerdIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                symbol: "lost"
+                iconSize: 12
+                color: lostMouse.containsMouse ? TuiStyle.bg : TuiStyle.accent
+            }
+
+            StyledText {
+                anchors.verticalCenter: parent.verticalCenter
+                // The thumbnail can be small; the label goes before the icon does.
+                visible: root.width > 140
+                text: "Bring here"
+                color: lostMouse.containsMouse ? TuiStyle.bg : TuiStyle.accent
+                font.pixelSize: 11
+            }
+        }
+
+        MouseArea {
+            id: lostMouse
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.rescueRequested()
         }
     }
 
