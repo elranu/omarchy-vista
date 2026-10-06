@@ -313,7 +313,9 @@ under a signature built from the monitors' descriptions, and applies it. When
 those same screens are connected again, the layout is put back. A different set
 of screens finds no entry, so a layout saved at the desk is never applied to a
 projector somewhere else, and your `monitors.lua` keeps deciding what happens
-there. The gear panel's **Restore saved display layouts** turns the restoring
+there. A Hyprland reload, which Omarchy does on every theme change, puts the
+screens back where `monitors.lua` says; Vista applies the saved layout again
+right after it. The gear panel's **Restore saved display layouts** turns the restoring
 off without throwing the saved layouts away, and **Forget** drops the one for
 the screens in front of you.
 

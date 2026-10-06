@@ -30,13 +30,7 @@ MiniApp {
     contentHeight: 640
     widthShare: 0.72
     heightShare: 0.78
-    hints: [
-        { key: "←→↑↓", label: "Move" },
-        { key: "1-9", label: "Select" },
-        { key: "⏎", label: "Apply" },
-        { key: "s", label: "Save" },
-        { key: "u", label: "Undo" }
-    ]
+    hints: []
 
     function reload() {
         const fresh = Displays.fromMonitors(HyprlandData.monitors);
@@ -303,29 +297,9 @@ MiniApp {
             Layout.fillWidth: true
             spacing: 10
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
-
-                StyledText {
-                    Layout.fillWidth: true
-                    text: root.dirty
-                        ? "Applying restarts the bar on every screen that moves, so the overview closes."
-                        : "Positions match the running session."
-                    color: root.dirty ? TuiStyle.fg : TuiStyle.dim
-                    font.pixelSize: 11
-                    wrapMode: Text.WordWrap
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    text: root.hasSavedLayout
-                        ? "Saved for these screens; it comes back when they are connected again."
-                        : "Save keeps this arrangement for these screens only."
-                    color: TuiStyle.dim
-                    font.pixelSize: 10
-                    wrapMode: Text.WordWrap
-                }
-            }
+            // Icons only. What the lines of text here used to say lives in the
+            // tooltips, where it is read when it matters rather than all the time.
+            Item { Layout.fillWidth: true }
 
             MiniAppIconButton {
                 icon: "undo"
@@ -346,13 +320,15 @@ MiniApp {
             }
             MiniAppIconButton {
                 icon: "apply"
-                tooltip: "Apply to this session (Enter)"
+                tooltip: "Apply to this session (Enter) — the Overview closes"
                 enabled: root.dirty
                 onActivated: root.apply()
             }
             MiniAppIconButton {
                 icon: "save"
-                tooltip: "Save for these screens and apply (s)"
+                tooltip: root.hasSavedLayout
+                    ? "Saved for these screens — save again (s)"
+                    : "Save for these screens and apply (s)"
                 primary: true
                 enabled: root.tileCount > 1
                 onActivated: root.save()
