@@ -17,6 +17,13 @@
   slugified like a new note's title, a taken name gets a numeric suffix, and the
   move is `mv -n`, so a rename can never overwrite another note. The note stays
   open under its new name with whatever was typed.
+- A saved display layout survives a theme change. Omarchy reloads Hyprland on
+  every theme change, which re-reads `monitors.lua` and puts the screens back
+  where the config says; Vista only put a saved layout back when the set of
+  screens changed, so the layout was lost. It is applied again after any
+  Hyprland reload.
+- The Displays panel is the canvas and its icon buttons only: the status lines
+  and the key hints are gone, and what they said is in the buttons' tooltips.
 - The mini apps' toolbars are icon buttons with a tooltip for each one, shared
   from the `MiniApp` frame, and the Displays and Notes title bars finally show
   their own glyph: `NerdIcon` had no entry for them, so both were falling back
