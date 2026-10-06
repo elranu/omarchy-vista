@@ -17,6 +17,14 @@ var MINI_APPS = [
         icon: "monitor",
         source: "DisplaysApp.qml",
         keywords: ["display", "displays", "monitor", "monitors", "monitores", "pantalla", "pantallas", "screen", "screens", "layout", "arrange"]
+    },
+    {
+        id: "notes",
+        title: "Notes",
+        subtitle: "Quick capture, search and edit",
+        icon: "note",
+        source: "NotesApp.qml",
+        keywords: ["note", "notes", "nota", "notas", "capture", "journal", "diario", "todo"]
     }
 ];
 

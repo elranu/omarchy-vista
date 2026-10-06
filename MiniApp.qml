@@ -51,6 +51,28 @@ Item {
 
     anchors.fill: parent
 
+    // With the cursor in one of the app's text fields, keys the field does not
+    // take climb the parent chain to here rather than reaching the Overview's
+    // key handler, which is a sibling. So the frame answers them: Escape still
+    // closes, Ctrl+Enter still opens a window, and the app's own handleKey gets
+    // the rest -- Ctrl+F, Ctrl+N and so on.
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Escape) {
+            root.closeRequested();
+            event.accepted = true;
+            return;
+        }
+        if (!root.windowed
+            && (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+            && (event.modifiers & Qt.ControlModifier)) {
+            root.popOutRequested();
+            event.accepted = true;
+            return;
+        }
+        if (typeof root.handleKey === "function" && root.handleKey(event))
+            event.accepted = true;
+    }
+
     // Darkens the grid behind the panel and swallows clicks that miss it. In a
     // window there is nothing behind to dim.
     MouseArea {

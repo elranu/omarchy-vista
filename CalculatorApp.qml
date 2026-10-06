@@ -264,10 +264,10 @@ MiniApp {
                     anchors.centerIn: parent
                     spacing: 7
 
-                    StyledText {
-                        text: "⏎"
+                    NerdIcon {
+                        symbol: "copy"
+                        iconSize: 13
                         color: copyArea.containsMouse ? TuiStyle.bg : TuiStyle.accent
-                        font.pixelSize: 13
                     }
 
                     StyledText {

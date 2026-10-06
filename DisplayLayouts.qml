@@ -4,6 +4,7 @@ import "."
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Io
 import "Displays.js" as Displays
 
@@ -176,6 +177,27 @@ Singleton {
             if (root.ready)
                 root.restoreDebounce.restart();
         }
+    }
+
+    // A Hyprland reload re-reads monitors.lua and puts every screen back where
+    // the config says, which undoes a saved layout without the set of screens
+    // changing -- so the topology check above never fires. Omarchy reloads
+    // Hyprland on every theme change, which is how a saved layout kept being
+    // lost. After a reload the saved layout is applied again; if the screens
+    // already sit where it says, restoreIfSaved does nothing.
+    property Connections reloadWatch: Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event?.name === "configreloaded" && root.ready)
+                root.reloadRestore.restart();
+        }
+    }
+
+    // Longer than the topology debounce: Hyprland is still re-applying its
+    // monitor rules for a moment after it reports the reload.
+    property Timer reloadRestore: Timer {
+        interval: 900
+        onTriggered: root.restoreIfSaved()
     }
 
     Component.onCompleted: root.ensureStateDirectory.running = true

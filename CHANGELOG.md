@@ -1,7 +1,37 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
+- New **Notes** mini app: a quick capture that appends a timestamped bullet to
+  the note for today, the list of notes newest first, filtering by name as you
+  type, a contents search once the query is three characters long, and an editor
+  for the selected note. Notes are Markdown files in one folder, `~/.Vista/Notes`
+  by default, created the first time the app is opened and configurable, so it
+  can be pointed at an existing vault. Captures are appended and never rewrite
+  the note; the editor saves on Ctrl+S, writes atomically, and also saves when
+  the panel closes. Only a plain file name inside the folder is ever written.
+- Notes can be renamed from a right-click menu on the note, or with `F2` or
+  `Ctrl+R`. The list is reachable from the keyboard with `↑` and `↓`, and the
+  notes folder is an editable field in the panel rather than a file to edit by
+  hand. The new name is
+  slugified like a new note's title, a taken name gets a numeric suffix, and the
+  move is `mv -n`, so a rename can never overwrite another note. The note stays
+  open under its new name with whatever was typed.
+- A saved display layout survives a theme change. Omarchy reloads Hyprland on
+  every theme change, which re-reads `monitors.lua` and puts the screens back
+  where the config says; Vista only put a saved layout back when the set of
+  screens changed, so the layout was lost. It is applied again after any
+  Hyprland reload.
+- The Displays panel is the canvas and its icon buttons only: the status lines
+  and the key hints are gone, and what they said is in the buttons' tooltips.
+- The mini apps' toolbars are icon buttons with a tooltip for each one, shared
+  from the `MiniApp` frame, and the Displays and Notes title bars finally show
+  their own glyph: `NerdIcon` had no entry for them, so both were falling back
+  to the generic one.
+- A note that changes on disk while it is open in the editor says so above the
+  editor and offers to reload, instead of being overwritten by the next save.
+  Closing the panel in that state keeps the edit as a conflict copy beside the
+  note rather than overwriting the newer version.
 - New **Displays** mini app: every connected monitor as a tile drawn at its
   logical size, draggable to where the screen stands on the desk. Tiles snap to
   their neighbours' edges and centres, a tile dropped on another slides to the
