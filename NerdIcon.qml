@@ -10,6 +10,7 @@ Text {
     function glyphFor(name) {
         switch (String(name || "apps")) {
         case "add": return "\uF067";                // fa-plus
+        case "lost": return "\uF1CD";               // fa-life-ring
         case "apps": return "\uF00A";                // fa-th-large
         case "select_window": return "\uF24D";       // fa-object-group
         case "terminal": return "\uF120";            // fa-terminal

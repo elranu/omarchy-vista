@@ -1,0 +1,18 @@
+{
+  "note": "Reported 2026-10-06: a Google Meet window on workspace 3 (eDP-1) with the geometry of DP-5. Values from hyprctl clients -j / monitors -j; only the fields this check reads.",
+  "monitors": [
+    { "id": 0, "name": "eDP-1", "x": 2400, "y": 225, "width": 2880, "height": 1800, "scale": 1.6, "transform": 0 },
+    { "id": 1, "name": "DP-5", "x": 0, "y": 0, "width": 3840, "height": 2160, "scale": 1.6, "transform": 0 }
+  ],
+  "clients": [
+    { "address": "0x64458dcb8700", "class": "brave-browser", "title": "Meet - gyw-ovxf-jen - Brave",
+      "monitor": 0, "workspace": { "id": 3 }, "at": [10, 45], "size": [1185, 1295],
+      "floating": false, "hidden": false, "mapped": true },
+    { "address": "0x6445aaaa0001", "class": "brave-browser", "title": "Gmail - Brave",
+      "monitor": 0, "workspace": { "id": 3 }, "at": [2412, 272], "size": [1776, 1066],
+      "floating": false, "hidden": false, "mapped": true },
+    { "address": "0x6445aaaa0002", "class": "com.mitchellh.ghostty", "title": "ghostty",
+      "monitor": 1, "workspace": { "id": 9 }, "at": [12, 57], "size": [2376, 1281],
+      "floating": false, "hidden": false, "mapped": true }
+  ]
+}
