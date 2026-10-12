@@ -19,7 +19,7 @@ import "Launch.js" as Launch
 // back to that workspace without taking the focus.
 //
 // Between the launch and the window there is nothing to see, sometimes for
-// seconds, so an "Opening" notice on Omarchy's OSD card covers that gap. It
+// seconds, so an "Opening" card with the app's icon covers that gap. It
 // goes when the window appears, when an already running app focuses its own
 // window instead, or after noticeLimit, for a window no hint recognises.
 Singleton {
@@ -29,7 +29,6 @@ Singleton {
     // Long enough for a cold Electron start.
     readonly property int patience: 45000
     property var notices: []
-    property bool noticeShown: false
     readonly property int noticeLimit: 15000
 
     function launch(entry, newWorkspace) {
@@ -39,14 +38,21 @@ Singleton {
         const hints = Launch.launchHints(entry);
         launcher.createObject(root, { script: script, hints: hints });
         if (GlobalStates.launchNotice)
-            root.notice(String(entry?.name ?? ""), hints);
+            root.notice(entry, hints);
         return true;
     }
 
-    function notice(name, hints) {
+    function notice(entry, hints) {
         const now = Date.now();
-        root.notices = root.notices.filter(item => item.expires > now)
-            .concat([{ name: name, hints: hints, since: now, expires: now + root.noticeLimit }]);
+        const item = {
+            name: String(entry?.name ?? "").trim(),
+            icon: AppSearch.iconSource(entry?.icon || ""),
+            monitorName: Hyprland.focusedMonitor?.name ?? "",
+            hints: hints,
+            since: now,
+            expires: now + root.noticeLimit
+        };
+        root.notices = root.notices.filter(item => item.expires > now).concat([item]);
         root.refreshNotice();
     }
 
@@ -64,21 +70,16 @@ Singleton {
         root.refreshNotice();
     }
 
-    // The newest launch still waiting is on the card. The card is only closed
-    // when Vista put something on it, so a volume OSD is left alone.
+    // The newest launch still waiting is on the card.
     function refreshNotice() {
         const now = Date.now();
         root.notices = root.notices.filter(item => item.expires > now);
         if (root.notices.length === 0) {
             noticeTimer.stop();
-            if (root.noticeShown)
-                Quickshell.execDetached(["omarchy-shell", "-q", "osd", "close"]);
-            root.noticeShown = false;
+            launchNotice.notice = null;
             return;
         }
-        const latest = root.notices[root.notices.length - 1];
-        Quickshell.execDetached(["omarchy-shell", "-q", "osd", "show", Launch.noticePayload(latest.name)]);
-        root.noticeShown = true;
+        launchNotice.notice = root.notices[root.notices.length - 1];
         noticeTimer.interval = Math.max(50, Math.min(...root.notices.map(item => item.expires)) - now);
         noticeTimer.restart();
     }
@@ -126,6 +127,10 @@ Singleton {
                 }
             }
         }
+    }
+
+    LaunchNotice {
+        id: launchNotice
     }
 
     Timer {

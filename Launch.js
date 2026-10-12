@@ -135,11 +135,3 @@ function moveLua(address, workspaceId, monitorName) {
 function activeWindowClass(data) {
     return String(data ?? "").split(",")[0];
 }
-
-// The notice shown on Omarchy's OSD card until the app's window appears.
-// Duration 0 keeps it up until LaunchTracker closes it. The icon is the Nerd
-// Font rocket.
-function noticePayload(appName) {
-    const name = String(appName ?? "").trim();
-    return JSON.stringify({ icon: "", message: name.length > 0 ? `Opening ${name}` : "Opening", duration: 0 });
-}
