@@ -17,19 +17,70 @@ import "Launch.js" as Launch
 // window to the process it started. Usually it cannot (see Launch.js), so the
 // next window whose class matches the app, within the patience below, is moved
 // back to that workspace without taking the focus.
+//
+// Between the launch and the window there is nothing to see, sometimes for
+// seconds, so an "Opening" notice on Omarchy's OSD card covers that gap. It
+// goes when the window appears, when an already running app focuses its own
+// window instead, or after noticeLimit, for a window no hint recognises.
 Singleton {
     id: root
 
     property var pending: []
     // Long enough for a cold Electron start.
     readonly property int patience: 45000
+    property var notices: []
+    property bool noticeShown: false
+    readonly property int noticeLimit: 15000
 
     function launch(entry, newWorkspace) {
         const script = Launch.launchLua(entry?.id, newWorkspace);
         if (script.length === 0)
             return false;
-        launcher.createObject(root, { script: script, hints: Launch.launchHints(entry) });
+        const hints = Launch.launchHints(entry);
+        launcher.createObject(root, { script: script, hints: hints });
+        if (GlobalStates.launchNotice)
+            root.notice(String(entry?.name ?? ""), hints);
         return true;
+    }
+
+    function notice(name, hints) {
+        const now = Date.now();
+        root.notices = root.notices.filter(item => item.expires > now)
+            .concat([{ name: name, hints: hints, since: now, expires: now + root.noticeLimit }]);
+        root.refreshNotice();
+    }
+
+    // Focus moves around right after a launch, often onto a window of the
+    // same app, so a focus counts only once the notice has been up a while.
+    function dismissNotice(windowClass, minAge) {
+        const now = Date.now();
+        const index = root.notices.findIndex(item => now - item.since >= minAge
+            && Launch.matchesLaunch(item.hints, windowClass));
+        if (index < 0)
+            return;
+        const rest = root.notices.slice();
+        rest.splice(index, 1);
+        root.notices = rest;
+        root.refreshNotice();
+    }
+
+    // The newest launch still waiting is on the card. The card is only closed
+    // when Vista put something on it, so a volume OSD is left alone.
+    function refreshNotice() {
+        const now = Date.now();
+        root.notices = root.notices.filter(item => item.expires > now);
+        if (root.notices.length === 0) {
+            noticeTimer.stop();
+            if (root.noticeShown)
+                Quickshell.execDetached(["omarchy-shell", "-q", "osd", "close"]);
+            root.noticeShown = false;
+            return;
+        }
+        const latest = root.notices[root.notices.length - 1];
+        Quickshell.execDetached(["omarchy-shell", "-q", "osd", "show", Launch.noticePayload(latest.name)]);
+        root.noticeShown = true;
+        noticeTimer.interval = Math.max(50, Math.min(...root.notices.map(item => item.expires)) - now);
+        noticeTimer.restart();
     }
 
     function track(hints, workspace) {
@@ -77,13 +128,26 @@ Singleton {
         }
     }
 
+    Timer {
+        id: noticeTimer
+        onTriggered: root.refreshNotice()
+    }
+
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event?.name !== "openwindow" || root.pending.length === 0)
+            if (event?.name === "activewindow" && root.notices.length > 0) {
+                root.dismissNotice(Launch.activeWindowClass(event.data), 1000);
+                return;
+            }
+            if (event?.name !== "openwindow")
                 return;
             const opened = Launch.parseOpenWindow(event.data);
             if (!opened)
+                return;
+            if (root.notices.length > 0)
+                root.dismissNotice(opened.windowClass, 0);
+            if (root.pending.length === 0)
                 return;
             const match = root.claim(opened.windowClass);
             if (!match)
