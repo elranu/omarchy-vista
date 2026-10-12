@@ -243,7 +243,9 @@ Singleton {
 
         if (GlobalStates.overviewDropFollows) {
             GlobalStates.promoteWorkspaceMru(targetWorkspace);
-            GlobalStates.overviewOpen = false;
+            // Later, not now: the dropped window's delegate still settles its
+            // position after this returns, and closing tears it down.
+            Qt.callLater(() => { GlobalStates.overviewOpen = false; });
         } else {
             GlobalStates.overviewPendingDropFocus = {
                 address: windowAddress,
