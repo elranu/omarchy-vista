@@ -145,6 +145,7 @@ Scope {
             return;
 
         GlobalStates.superReleaseMightTrigger = false;
+        GlobalStates.overviewPendingDropFocus = null;
         GlobalStates.overviewOpen = false;
 
         if ((entry.monitorName ?? "").length > 0)
@@ -174,7 +175,11 @@ Scope {
                 const anchor = Hyprland.focusedMonitor?.name ?? "";
                 overviewScope.lockedScreenName = anchor;
                 GlobalStates.overviewAnchorMonitorName = anchor;
+                GlobalStates.overviewPendingDropFocus = null;
+                dropFocusTimer.stop();
             } else {
+                if (GlobalStates.overviewPendingDropFocus)
+                    dropFocusTimer.restart();
                 overviewScope.lockedScreenName = "";
                 GlobalStates.overviewAnchorMonitorName = "";
                 GlobalStates.overviewPendingWorkspaceMonitorById = ({});
@@ -183,6 +188,25 @@ Scope {
                 GlobalStates.overviewMiniAppInput = "";
             }
             overviewScope.setNativeMouseGuard(GlobalStates.overviewOpen);
+        }
+    }
+
+    // With overviewDropFollows off, closing the Overview lands on the last
+    // window dropped on another workspace. Picking a workspace or a window on
+    // the way out clears it first; the wait lets any other focus change made
+    // on the way out arrive, and the check below lets that one win.
+    Timer {
+        id: dropFocusTimer
+        interval: 150
+        onTriggered: {
+            const pending = GlobalStates.overviewPendingDropFocus;
+            GlobalStates.overviewPendingDropFocus = null;
+            if (!pending || GlobalStates.overviewOpen)
+                return;
+            if ((Hyprland.focusedWorkspace?.id ?? -1) !== pending.focusedWorkspaceId)
+                return;
+            Hyprland.dispatch(`hl.dsp.focus({ window = "address:${pending.address}" })`);
+            GlobalStates.promoteWorkspaceMru(pending.workspaceId);
         }
     }
 

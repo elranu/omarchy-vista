@@ -149,6 +149,7 @@ Singleton {
     }
 
     function commitSelectedWorkspace() {
+        GlobalStates.overviewPendingDropFocus = null;
         if (root.focusedEntryIsTrailingEmpty()) {
             const entry = root.focusedEntry();
             root.focusMonitorForEntry(entry);
@@ -223,13 +224,32 @@ Singleton {
                 sourceWorkspaceId: currentWorkspaceId
             });
             GlobalStates.overviewPendingOccupiedWorkspaces = filtered;
-            Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${targetWorkspace}, follow = false, window = "address:${windowAddress}" })`);
-            if (targetMonitorName.length > 0)
-                Hyprland.dispatch(`hl.dsp.workspace.move({ workspace = "${targetWorkspace}", monitor = "${targetMonitorName}" })`);
+        }
+
+        // One eval, so the steps run in this order. Separate dispatches each
+        // open their own socket and are not guaranteed to. A workspace that
+        // does not exist yet is created on the focused monitor, then moved to
+        // the one that owns the card, where it stays hidden: without the
+        // focus at the end, the window vanished behind whatever that monitor
+        // was showing.
+        const steps = [
+            `hl.dispatch(hl.dsp.window.move({ workspace = ${targetWorkspace}, follow = false, window = "address:${windowAddress}" }))`
+        ];
+        if (targetMonitorName.length > 0)
+            steps.push(`hl.dispatch(hl.dsp.workspace.move({ workspace = "${targetWorkspace}", monitor = "${targetMonitorName}" }))`);
+        if (GlobalStates.overviewDropFollows)
+            steps.push(`hl.dispatch(hl.dsp.focus({ window = "address:${windowAddress}" }))`);
+        Quickshell.execDetached(["hyprctl", "eval", steps.join("; ")]);
+
+        if (GlobalStates.overviewDropFollows) {
+            GlobalStates.promoteWorkspaceMru(targetWorkspace);
+            GlobalStates.overviewOpen = false;
         } else {
-            Hyprland.dispatch(`hl.dsp.window.move({ workspace = ${targetWorkspace}, follow = false, window = "address:${windowAddress}" })`);
-            if (targetMonitorName.length > 0)
-                Hyprland.dispatch(`hl.dsp.workspace.move({ workspace = "${targetWorkspace}", monitor = "${targetMonitorName}" })`);
+            GlobalStates.overviewPendingDropFocus = {
+                address: windowAddress,
+                workspaceId: targetWorkspace,
+                focusedWorkspaceId: Hyprland.focusedWorkspace?.id ?? -1
+            };
         }
 
         if (sourceIsEmptyAfterMove) {
@@ -250,6 +270,7 @@ Singleton {
     function focusWindow(windowData) {
         if (!windowData?.address)
             return;
+        GlobalStates.overviewPendingDropFocus = null;
         if (windowData?.workspace?.id > 0)
             GlobalStates.promoteWorkspaceMru(windowData.workspace.id);
         Hyprland.dispatch(`hl.dsp.focus({window = "address:${windowData.address}"})`);
