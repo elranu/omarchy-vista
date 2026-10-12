@@ -7,7 +7,6 @@ import Quickshell
 import Quickshell.Hyprland
 import "Calculator.js" as Calculator
 import "MiniApps.js" as MiniApps
-import "Launch.js" as Launch
 
 Item {
     id: root
@@ -96,10 +95,8 @@ Item {
     // Either way the window is pinned to that workspace, so an app that is
     // slow to start still opens there after the user has moved on.
     function launchApp(app, inPlace) {
-        const script = Launch.launchLua(app?.id, !inPlace);
-        if (script.length === 0)
+        if (!LaunchTracker.launch(app, !inPlace))
             return;
-        Quickshell.execDetached(["hyprctl", "eval", script]);
         GlobalStates.overviewOpen = false;
     }
 
