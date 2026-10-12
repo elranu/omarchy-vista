@@ -57,6 +57,11 @@ Panel {
         root.persistSetting("dropFollows", enabled);
     }
 
+    function persistLaunchNotice(enabled) {
+        GlobalStates.launchNotice = enabled;
+        root.persistSetting("launchNotice", enabled);
+    }
+
     function persistRestoreDisplayLayouts(enabled) {
         GlobalStates.restoreDisplayLayouts = enabled;
         root.persistSetting("restoreDisplayLayouts", enabled);
@@ -69,6 +74,7 @@ Panel {
         GlobalStates.overviewVimKeys = root.setting("vimKeys", true) !== false;
         GlobalStates.restoreDisplayLayouts = root.setting("restoreDisplayLayouts", true) !== false;
         GlobalStates.overviewDropFollows = root.setting("dropFollows", true) !== false;
+        GlobalStates.launchNotice = root.setting("launchNotice", true) !== false;
     }
 
     Component.onCompleted: {
@@ -241,6 +247,16 @@ Panel {
                                 : "Any letter opens search."
                             checked: GlobalStates.overviewVimKeys
                             onToggled: root.persistVimKeys(!GlobalStates.overviewVimKeys)
+                        }
+
+                        ToggleRow {
+                            width: menuColumn.width
+                            title: "Show a notice while an app opens"
+                            detail: GlobalStates.launchNotice
+                                ? "\"Opening\" stays on screen until the app's window appears."
+                                : "Nothing shows between launching an app and its window appearing."
+                            checked: GlobalStates.launchNotice
+                            onToggled: root.persistLaunchNotice(!GlobalStates.launchNotice)
                         }
 
                         Rectangle {
