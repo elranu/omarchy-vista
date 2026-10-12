@@ -10,6 +10,15 @@
   back there, without taking the focus or pulling the user over to it. The
   window is recognised by its class, matched against the app's id, startup
   class, name, binary and, for a web app, its host, for up to 45 seconds.
+- Dropping a window on a workspace of another monitor in the Overview now
+  takes you there: the Overview closes and the window is focused on its new
+  workspace. A new workspace was created on the monitor in use and then moved
+  to the other one, where it stayed hidden behind whatever that monitor was
+  showing, so the window seemed to vanish and the focus stayed elsewhere. The
+  steps also run as one `hyprctl eval` now, so they cannot arrive out of order.
+  A new setting, "Go to a window after dropping it", turned off, keeps the
+  Overview open to keep arranging and goes to the last window dropped when it
+  closes.
 
 ## 0.3.0
 
