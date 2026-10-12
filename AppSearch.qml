@@ -188,15 +188,4 @@ Singleton {
         scored.sort((a, b) => (a.score - b.score) || a.name.localeCompare(b.name));
         return scored.map(item => item.entry);
     }
-
-    // uwsm-app keeps the app out of wayland-wm@.service, and gtk-launch resolves
-    // ids with spaces or ones UWSM rejects. The .desktop suffix is required or
-    // ids like org.telegram.desktop will not resolve. Same approach as AppLibrary.
-    function launchApp(app) {
-        const id = String(app?.id || "");
-        if (id.length === 0)
-            return false;
-        Quickshell.execDetached(["uwsm-app", "--", "gtk-launch", `${id}.desktop`]);
-        return true;
-    }
 }
