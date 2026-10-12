@@ -129,3 +129,9 @@ function moveLua(address, workspaceId, monitorName) {
             `if ws and ws.monitor and ws.monitor.name ~= "${monitorName}" then hl.dispatch(hl.dsp.workspace.move({ workspace = "${id}", monitor = "${monitorName}" })) end`);
     return steps.join("; ");
 }
+
+// activewindow>>CLASS,TITLE. A single-instance app that is already running
+// focuses its window instead of opening one.
+function activeWindowClass(data) {
+    return String(data ?? "").split(",")[0];
+}
