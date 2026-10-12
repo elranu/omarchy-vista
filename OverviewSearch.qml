@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Hyprland
 import "Calculator.js" as Calculator
 import "MiniApps.js" as MiniApps
+import "Launch.js" as Launch
 
 Item {
     id: root
@@ -92,15 +93,14 @@ Item {
     // or Shift+click) it opens on the workspace that was current when the
     // Overview opened: arrow navigation only moves the selection, it never
     // switches workspace, so Hyprland's focused workspace is still that one.
+    // Either way the window is pinned to that workspace, so an app that is
+    // slow to start still opens there after the user has moved on.
     function launchApp(app, inPlace) {
-        if (!app)
+        const script = Launch.launchLua(app?.id, !inPlace);
+        if (script.length === 0)
             return;
-        if (!inPlace)
-            Hyprland.dispatch('hl.dsp.focus({ workspace = "empty" })');
-        Qt.callLater(() => {
-            AppSearch.launchApp(app);
-            GlobalStates.overviewOpen = false;
-        });
+        Quickshell.execDetached(["hyprctl", "eval", script]);
+        GlobalStates.overviewOpen = false;
     }
 
     function openMiniApp(app, input) {

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- An app launched from the Overview opens on the workspace it was launched for,
+  even when it takes a few seconds to start and the user has moved to another
+  workspace or monitor in the meantime. A window used to land on whatever
+  workspace was focused when it appeared. The launch now goes through a
+  Hyprland exec rule that pins it to the new workspace, or to the current one
+  with Shift+Enter, without pulling the focus back to it. An app that hands
+  the launch to a copy already running, such as a browser with a window open,
+  still opens wherever that copy decides.
+
 ## 0.3.0
 
 - New **Notes** mini app: a quick capture that appends a timestamped bullet to
