@@ -43,7 +43,7 @@ Singleton {
     property bool overviewDropFollows: true
     property var overviewPendingDropFocus: null
     // A launched app can take seconds to show a window. Until it does, an
-    // "Opening" notice on Omarchy's OSD card says the launch went through.
+    // "Opening" card with the app's icon says the launch went through.
     property bool launchNotice: true
     // Each overlay draws only its own monitor's workspaces. Persisted to the bar
     // widget entry in shell.json, the same way overviewSortMode is.

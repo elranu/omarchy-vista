@@ -19,8 +19,8 @@
   A new setting, "Go to a window after dropping it", turned off, keeps the
   Overview open to keep arranging and goes to the last window dropped when it
   closes.
-- Launching an app from the Overview shows "Opening <app>" on Omarchy's OSD
-  card until its window appears, so the seconds a slow app takes to start no
+- Launching an app from the Overview shows a card with the app's icon and
+  "Opening <app>", styled like Omarchy's OSD, until its window appears, so the seconds a slow app takes to start no
   longer look like nothing happened. The notice also goes when an app that was
   already running focuses its own window instead, and after 15 seconds at most.
   A new setting, "Show a notice while an app opens", turns it off.
