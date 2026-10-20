@@ -27,3 +27,4 @@ MiniAppWindow 1.0 MiniAppWindow.qml
 CalculatorApp 1.0 CalculatorApp.qml
 StyledText 1.0 StyledText.qml
 StyledImage 1.0 StyledImage.qml
+NerdIcon 1.0 NerdIcon.qml

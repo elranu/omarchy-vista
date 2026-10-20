@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- The Overview loads again with Quickshell 0.3.2: `NerdIcon` is registered in
+  the module's `qmldir`. Newer Quickshell no longer resolves components that
+  sit in the plugin folder without being listed there, so the Overview failed
+  with `NerdIcon is not a type` and Super opened nothing.
 - New **Displays** mini app: every connected monitor as a tile drawn at its
   logical size, draggable to where the screen stands on the desk. Tiles snap to
   their neighbours' edges and centres, a tile dropped on another slides to the
