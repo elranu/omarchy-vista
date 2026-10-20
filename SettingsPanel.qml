@@ -52,6 +52,11 @@ Panel {
         root.persistSetting("vimKeys", enabled);
     }
 
+    function persistDropFollows(enabled) {
+        GlobalStates.overviewDropFollows = enabled;
+        root.persistSetting("dropFollows", enabled);
+    }
+
     function persistRestoreDisplayLayouts(enabled) {
         GlobalStates.restoreDisplayLayouts = enabled;
         root.persistSetting("restoreDisplayLayouts", enabled);
@@ -63,6 +68,7 @@ Panel {
         GlobalStates.overviewPerMonitor = root.setting("perMonitor", true) !== false;
         GlobalStates.overviewVimKeys = root.setting("vimKeys", true) !== false;
         GlobalStates.restoreDisplayLayouts = root.setting("restoreDisplayLayouts", true) !== false;
+        GlobalStates.overviewDropFollows = root.setting("dropFollows", true) !== false;
     }
 
     Component.onCompleted: {
@@ -199,6 +205,16 @@ Panel {
                                 : "Native slots 1–10 stay visible and Win+number goes to the native workspace. Occupied workspaces still follow MRU order."
                             checked: GlobalStates.overviewSortMode === "legacy"
                             onToggled: root.persistMode(GlobalStates.overviewSortMode === "legacy" ? "system" : "legacy")
+                        }
+
+                        ToggleRow {
+                            width: menuColumn.width
+                            title: "Go to a window after dropping it"
+                            detail: GlobalStates.overviewDropFollows
+                                ? "Dropping a window on another workspace closes the Overview and focuses it there."
+                                : "The Overview stays open to keep arranging. Closing it goes to the last window dropped."
+                            checked: GlobalStates.overviewDropFollows
+                            onToggled: root.persistDropFollows(!GlobalStates.overviewDropFollows)
                         }
 
                         Rectangle {

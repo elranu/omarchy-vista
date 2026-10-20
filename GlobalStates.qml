@@ -36,6 +36,12 @@ Singleton {
     property bool overviewVimKeys: true
     // Put a saved monitor layout back when those same screens reappear.
     property bool restoreDisplayLayouts: true
+    // Dropping a window on another workspace in the Overview closes it and
+    // focuses the window there. Off, the Overview stays open to keep arranging,
+    // and closing it lands on the last window dropped, unless a workspace or a
+    // window was picked on the way out.
+    property bool overviewDropFollows: true
+    property var overviewPendingDropFocus: null
     // Each overlay draws only its own monitor's workspaces. Persisted to the bar
     // widget entry in shell.json, the same way overviewSortMode is.
     property bool overviewPerMonitor: true
