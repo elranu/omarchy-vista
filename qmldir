@@ -22,6 +22,7 @@ singleton WorkspaceNavigation 1.0 WorkspaceNavigation.qml
 singleton OverviewSwitchingController 1.0 OverviewSwitchingController.qml
 Overview 1.0 Overview.qml
 OverviewSearch 1.0 OverviewSearch.qml
+LaunchNotice 1.0 LaunchNotice.qml
 OverviewWidget 1.0 OverviewWidget.qml
 OverviewWindow 1.0 OverviewWindow.qml
 MiniApp 1.0 MiniApp.qml

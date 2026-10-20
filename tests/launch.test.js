@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(require.resolve('../Launch.js'), 'utf8'), context);
-const { launchCommand, launchLua, shellQuote, luaString, launchHints, matchesLaunch, parseOpenWindow, moveLua } = context;
+const { launchCommand, launchLua, shellQuote, luaString, launchHints, matchesLaunch, parseOpenWindow, moveLua, activeWindowClass } = context;
 
 test('the command goes through uwsm-app and gtk-launch with the .desktop suffix', () => {
     assert.equal(launchCommand('org.telegram.desktop'),
@@ -82,4 +82,9 @@ test('the move sends the window back silently and keeps its workspace on its mon
     assert.equal(moveLua('0x1"; os.exit()', 7, 'eDP-1'), '');
     assert.equal(moveLua('0x1', 0, 'eDP-1'), '');
     assert.doesNotMatch(moveLua('0x1', 3, 'eDP-1" })'), /monitor/);
+});
+
+test('an activewindow event is read up to the class', () => {
+    assert.equal(activeWindowClass('obsidian,Notes, drafts'), 'obsidian');
+    assert.equal(activeWindowClass(undefined), '');
 });
