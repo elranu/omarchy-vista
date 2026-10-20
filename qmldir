@@ -10,6 +10,7 @@ singleton FileUtils 1.0 FileUtils.qml
 singleton GlobalFocusGrab 1.0 GlobalFocusGrab.qml
 singleton GlobalStates 1.0 GlobalStates.qml
 singleton HyprlandData 1.0 HyprlandData.qml
+singleton LaunchTracker 1.0 LaunchTracker.qml
 singleton OmarchyTheme 1.0 OmarchyTheme.qml
 singleton ServiceManager 1.0 ServiceManager.qml
 singleton TuiStyle 1.0 TuiStyle.qml
