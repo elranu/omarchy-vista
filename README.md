@@ -38,6 +38,9 @@ See [`CHANGELOG.md`](CHANGELOG.md) for release notes.
   Win+number, Win+Tab, and Win+Shift+Tab.
 - Search for applications, open windows, and Omarchy menu actions from Overview,
   with a built-in calculator.
+- Take notes without leaving the keyboard: the **Notes** mini app captures a
+  timestamped line into the note for today, and lists, searches and edits every
+  note in its folder.
 - Arrange your monitors: the **Displays** mini app draws every screen at its
   logical size and lets you drag them to where they stand on your desk. A layout
   can be saved for that exact set of screens, in Vista's own state file.
@@ -190,6 +193,68 @@ closes it and leaves the Overview open.
 
 Adding one is a QML file based on `MiniApp.qml` plus an entry in `MiniApps.js`.
 
+### Notes
+
+Search for `notes` (also `nota`, `notas`, `diario`) and press Enter. The panel has
+three parts:
+
+- **Quick capture** at the top, with the cursor already in it when Notes opens,
+  so you can start typing straight away. Whatever you type goes to the note for today,
+  named after the date, as one bullet with the time in front of it:
+  `- 14:32 call the accountant`. `Ctrl+Enter` files it. A capture is **appended**,
+  so it can never overwrite what is already in the note, and a multi-line capture
+  stays a single bullet with its extra lines indented.
+- **The list** on the left, newest first, showing each note's first Markdown
+  heading when it has one and its file name otherwise. Typing filters by name,
+  and once the query is three characters long it also searches the contents of
+  every note; notes that only matched on their contents rank below name matches.
+  `Ctrl+F` or `/` jumps to the search box, `↑` and `↓` walk the results from
+  anywhere in the panel, and `Enter` in the search box opens the first one. Only
+  the folder itself is listed, not its subfolders, because a note is saved back
+  under a plain file name. If the folder holds more than 1000 notes, the list
+  says how many of the total it is showing.
+- **The editor** on the right for the note that is selected. Clicking a note in
+  the list opens it and puts the cursor in the editor. `Ctrl+S` or the save
+  button writes it. The toolbar buttons are icons; hovering one says what it
+  does. Closing the panel saves first, so an edit is never dropped
+  silently, and the file is written atomically. If the note changes on disk while
+  you have it open, a line above the editor says so and offers to reload. Closing
+  the panel in that state does not overwrite the newer version: your edit is kept
+  as a separate note beside it, `ideas (conflict 2026-10-02 1633).md`, and both
+  survive. Anything that fails to write is shown in a line above the list.
+
+**Renaming**: right-click a note in the list for a small menu with **Open** and
+**Rename**, or press `F2` or `Ctrl+R` with the note open. Either way the file name
+turns into a field, with a ✓ button to apply it. The new name is slugified the same way a new note's title is, so
+`Ideas de Producto` becomes `ideas-de-producto.md`; a name typed with `.md` is
+kept as given. A name that is already taken gets a numeric suffix
+(`ideas-2.md`), so renaming can never overwrite another note. The note is copied
+to its new name and confirmed on disk before the old file is removed, so it is
+finished by the time you can type again and stays open with whatever you had
+typed.
+
+`Ctrl+N` jumps to the title box for a new note; the title becomes the heading and
+a plain file name derived from it, for example `ideas-de-producto.md`.
+
+Notes are Markdown files in one folder, `~/.Vista/Notes` by default. The folder is
+created the first time you open the app, never before. The path is the **Folder**
+field at the bottom of the panel: type another one, press Enter, and Notes works
+there instead, creating it if it does not exist. An unsaved edit is saved where it
+belongs before the folder changes, and the change is abandoned if that save fails.
+The new folder is remembered in `notes.json` in Vista's state directory. Point it at
+an Obsidian vault and the notes already in it are listed, opened and saved as
+they are, accents, spaces and parentheses included.
+
+Only a plain file name inside that folder is ever written. A title of our own
+making is slugified, so `../../etc/passwd` becomes `etc-passwd.md`, while an
+existing file keeps whatever name it has as long as that name cannot leave the
+folder, hide the file or carry a control character. Creating a note never lands
+on a name that is taken: the second `Ideas de producto` becomes
+`ideas-de-producto-2.md`, and a write that does not reach the disk is reported
+rather than reported as saved.
+
+The app does not delete notes.
+
 #### Open as a window
 
 `Ctrl+Enter`, or the **Window** keycap in the mini app's title bar, hands the
@@ -248,7 +313,9 @@ under a signature built from the monitors' descriptions, and applies it. When
 those same screens are connected again, the layout is put back. A different set
 of screens finds no entry, so a layout saved at the desk is never applied to a
 projector somewhere else, and your `monitors.lua` keeps deciding what happens
-there. The gear panel's **Restore saved display layouts** turns the restoring
+there. A Hyprland reload, which Omarchy does on every theme change, puts the
+screens back where `monitors.lua` says; Vista applies the saved layout again
+right after it. The gear panel's **Restore saved display layouts** turns the restoring
 off without throwing the saved layouts away, and **Forget** drops the one for
 the screens in front of you.
 
@@ -290,6 +357,9 @@ omarchy plugin list --json | jq '.[] | select(.id == "ranu.panorama")'
 - `Displays.js` — monitor layout geometry: logical sizes, snapping, overlap and gap repair.
 - `DisplaysApp.qml` — the Displays mini app: canvas, drag, apply and save.
 - `DisplayLayouts.qml` — saved layouts per set of screens, and restoring them.
+- `Notes.js` — note naming, listing, filtering and the shape of a capture.
+- `NotesApp.qml` — the Notes mini app: capture, list, search and editor.
+- `NotesStore.qml` — the notes folder on disk, and the remembered path.
 - `MiniApp.qml` — the shared mini app frame, over the grid or filling a window.
 - `MiniAppWindow.qml` — a mini app hosted in a real Hyprland window.
 - `MiniAppWindows.qml` — owns those windows, so they outlive the Overview.

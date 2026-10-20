@@ -30,13 +30,7 @@ MiniApp {
     contentHeight: 640
     widthShare: 0.72
     heightShare: 0.78
-    hints: [
-        { key: "←→↑↓", label: "Move" },
-        { key: "1-9", label: "Select" },
-        { key: "⏎", label: "Apply" },
-        { key: "s", label: "Save" },
-        { key: "u", label: "Undo" }
-    ]
+    hints: []
 
     function reload() {
         const fresh = Displays.fromMonitors(HyprlandData.monitors);
@@ -303,51 +297,38 @@ MiniApp {
             Layout.fillWidth: true
             spacing: 10
 
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 2
+            // Icons only. What the lines of text here used to say lives in the
+            // tooltips, where it is read when it matters rather than all the time.
+            Item { Layout.fillWidth: true }
 
-                StyledText {
-                    Layout.fillWidth: true
-                    text: root.dirty
-                        ? "Applying restarts the bar on every screen that moves, so the overview closes."
-                        : "Positions match the running session."
-                    color: root.dirty ? TuiStyle.fg : TuiStyle.dim
-                    font.pixelSize: 11
-                    wrapMode: Text.WordWrap
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    text: root.hasSavedLayout
-                        ? "Saved for these screens; it comes back when they are connected again."
-                        : "Save keeps this arrangement for these screens only."
-                    color: TuiStyle.dim
-                    font.pixelSize: 10
-                    wrapMode: Text.WordWrap
-                }
-            }
-
-            DisplaysButton {
-                label: "Undo"
+            MiniAppIconButton {
+                icon: "undo"
+                tooltip: "Undo unapplied changes (u)"
                 enabled: root.dirty
                 onActivated: root.undo()
             }
-            DisplaysButton {
-                label: "Reload"
+            MiniAppIconButton {
+                icon: "refresh"
+                tooltip: "Reload the Hyprland config (r)"
                 onActivated: root.revert()
             }
-            DisplaysButton {
-                label: "Forget"
+            MiniAppIconButton {
+                icon: "forget"
+                tooltip: "Forget the layout saved for these screens"
                 visible: root.hasSavedLayout
                 onActivated: root.forget()
             }
-            DisplaysButton {
-                label: "Apply"
+            MiniAppIconButton {
+                icon: "apply"
+                tooltip: "Apply to this session (Enter) — the Overview closes"
                 enabled: root.dirty
                 onActivated: root.apply()
             }
-            DisplaysButton {
-                label: "Save"
+            MiniAppIconButton {
+                icon: "save"
+                tooltip: root.hasSavedLayout
+                    ? "Saved for these screens — save again (s)"
+                    : "Save for these screens and apply (s)"
                 primary: true
                 enabled: root.tileCount > 1
                 onActivated: root.save()
@@ -355,39 +336,4 @@ MiniApp {
         }
     }
 
-    component DisplaysButton: Rectangle {
-        id: button
-
-        property string label: ""
-        property bool primary: false
-
-        signal activated()
-
-        implicitWidth: buttonLabel.implicitWidth + 26
-        implicitHeight: 32
-        radius: 6
-        color: !button.enabled ? "transparent"
-            : (buttonMouse.containsMouse ? TuiStyle.surfaceHover : TuiStyle.surfaceRaised)
-        border.width: 1
-        border.color: button.enabled
-            ? (button.primary ? TuiStyle.accent : TuiStyle.inactiveBorder)
-            : TuiStyle.inactiveBorder
-        opacity: button.enabled ? 1 : 0.45
-
-        StyledText {
-            id: buttonLabel
-            anchors.centerIn: parent
-            text: button.label
-            color: button.primary && button.enabled ? TuiStyle.accent : TuiStyle.fg
-            font.pixelSize: 12
-        }
-
-        MouseArea {
-            id: buttonMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.activated()
-        }
-    }
 }
