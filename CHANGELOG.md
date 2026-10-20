@@ -24,6 +24,14 @@
   longer look like nothing happened. The notice also goes when an app that was
   already running focuses its own window instead, and after 15 seconds at most.
   A new setting, "Show a notice while an app opens", turns it off.
+- Lost windows can be brought back from the Overview. A window Hyprland reports
+  on one monitor while its geometry sits on another -- seen after a hotplug, and
+  with a Google Meet window opened from a browser on the other screen -- was
+  invisible on its own workspace. The Overview still drew it, clamped into its
+  card; it now carries a **Bring here** badge that moves it to the workspace
+  being looked at and focuses it. Detection is the centre of the window outside
+  its monitor, skipping hidden windows and special workspaces, and nothing moves
+  unless the badge is clicked.
 
 ## 0.3.0
 
